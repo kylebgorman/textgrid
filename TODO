@@ -1,0 +1,9 @@
+5/15/11 (KG):
+
+- figure out the possible diversity of MLF files, and then generalize mlf() 
+options accordingly
+- implement __min__ and __max__ 
+- discuss lowercase matching at the TextGrid level
+- write some very basic unit tests at the bottom
+- write module-level docstring
+- 

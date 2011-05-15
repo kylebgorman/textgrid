@@ -1,0 +1,33 @@
+textgrid.py, v. 0.1
+
+Python classes for Praat TextGrid and TextTier files, and HTK MLF files
+
+Kyle Gorman <kgorman@ling.upenn.edu>
+Morgan Sonderegger <morgan@cs.uchicago.edu>
+Max Bane <bane@uchicago.edu>
+
+HOW TO CITE:
+
+While you don't have to, if you want to cite textgrid.py in a publication, 
+include a footnote link to the source:
+
+http://github.com/kylebgorman/textgrid.py/
+
+HOW TO INSTALL:
+
+The code can be placed in your working directory or in your $PYTHONPATH and then
+imported in your Python script. 
+
+SYNOPSIS:
+
+See the in-line documentation.
+
+HISTORY:
+
+KG designed this for personal use in 2007, circulated it in 2008, and turned 
+the original methods into Python classes in 2009. MS and MB began fixing bugs 
+and contributing functions for particular use cases in 2011. 
+
+TODO:
+
+Version 1.0 will come out when it is done.
