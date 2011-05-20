@@ -131,16 +131,20 @@ class TextGrid(object):
         Return the ith tier, or, if i is a string, the first tier with
         name i (ignoring case). 
         """
-        if type(i) is str:
-            for t in self.tiers:
-                if t.name().lower() == i.lower():
-                    return t
-            raise KeyError, 'Unknown tier name: %r' % i
-        elif type(i) is int:
-            return self.tiers[i] 
-        else:
-            raise TypeError, 'i must be a str or int; got %r' % type(i)
+        return self.tiers[i] 
 
+    def getfirst(self, tierName):
+        for t in self.tiers:
+            if t.name() == tierName:
+                return t
+        return None
+
+    def getall(self, tierName):
+        tiers = []
+        for t in self.tiers:
+            if t.name() == tierName:
+                tiers.append(t)
+        return tiers
 
     def tierNames(self, case=None):
         """
@@ -177,12 +181,13 @@ class TextGrid(object):
         return a.groups()[2][1:-1]
 
 
-    def read(self, file):
+    def read(self, f):
         """ 
-        Read the tiers contained in the Praat-format TextGrid file named by the
-        given string, and append those tiers to self.
+        Read the tiers contained in a Praat-format TextGrid file. f may be a
+        file object to read from, or a string naming the path to open for
+        reading.
         """
-        source = open(file, 'r')
+        source = f if isinstance(f, file) else open(f, 'r')
         source.readline() # header crap
         source.readline()
         source.readline()
@@ -218,12 +223,12 @@ class TextGrid(object):
         source.close()
 
 
-    def write(self, file):
+    def write(self, f):
         """
-        Write the current state into a Praat-format TextGrid file named by the
-        given string
+        Write the current state into a Praat-format TextGrid file. f may be a
+        file object to write to, or a string naming a path to open for writing.
         """
-        sink = open(file, 'w')
+        sink = f if isinstance(f, file) else open(f, 'w')
         sink.write('File type = "ooTextFile"\n')
         sink.write('Object class = "TextGrid"\n\n')
         sink.write('xmin = %f\n' % min(self))
@@ -295,8 +300,10 @@ class IntervalTier(object):
         raise NotImplementedError
 
 
-    def append(self, interval):
+    def add(self, interval):
+        # FIXME: there are better ways to keep a list sorted
         self.intervals.append(interval)
+        self.interval.sort()
 
 
     def remove(self, interval):
@@ -392,9 +399,10 @@ class PointTier(object):
         raise NotImplementedError
 
 
-    def append(self, point):
+    def add(self, point):
+        # FIXME: there are better ways to keep a list sorted
         self.points.append(point)
-
+        self.points.sort()
 
     def read(self, file):
         """
@@ -451,9 +459,21 @@ class Interval(object):
         return 'Interval(%r, %r, %r)' % (self.xmin, self.xmax, self.mark)
 
 
+    def __cmp__(self, other):
+        if self.overlaps(other):
+            raise ValueError("Overlapping Intervals: %s and %s" % (self, other))
+        # given that the two intervals do not overlap:
+        return cmp(self.xmin, other.xmin)
+
     def bounds(self):
         return (self.xmin, self.xmax)
 
+    def overlaps(self, otherInterval):
+        """
+        Tests whether this interval overlaps with the given interval. Symmetric.
+        """
+        # how elegant: http://www.rgrjr.com/emacs/overlap.html
+        return otherInterval.xmin < self.xmax and self.xmin < otherInterval.xmax
 
     def contains(self, x):
         """
