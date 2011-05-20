@@ -33,7 +33,7 @@
 Module docs here.
 """
 
-import re
+import re, sys
 
 
 class mlf(object):
@@ -195,7 +195,8 @@ class TextGrid(object):
         for i in xrange(m): # loop over grids
             source.readline()
             if source.readline().rstrip().split()[2] == '"IntervalTier"': 
-                inam = source.readline().rstrip().split(' = ')[1].strip('"')
+                #inam = source.readline().rstrip().split(' = ')[1].strip('"')
+                inam = self._getMark(source)
                 imin = float(source.readline().rstrip().split()[2])
                 imax = float(source.readline().rstrip().split()[2])
                 #itie = IntervalTier(inam, imin, imax) 
@@ -208,7 +209,8 @@ class TextGrid(object):
                     itie.add(Interval(jmin, jmax, jmrk))
                 self.append(itie) 
             else: # pointTier
-                inam = source.readline().rstrip().split(' = ')[1].strip('"')
+                #inam = source.readline().rstrip().split(' = ')[1].strip('"')
+                inam = self._getMark(source)
                 imin = float(source.readline().rstrip().split()[2])
                 imax = float(source.readline().rstrip().split()[2])
                 #itie = PointTier(inam, imin, imax) 
@@ -217,7 +219,8 @@ class TextGrid(object):
                 for j in range(n):
                     source.readline().rstrip() # header junk
                     jtim = float( source.readline().rstrip().split()[2])
-                    jmrk = source.readline().rstrip().split()[2][1:-1]
+                    #jmrk = source.readline().rstrip().split()[2][1:-1]
+                    jmrk = self._getMark(source)
                     itie.add(Point(jtim, jmrk))
                 self.append(itie)
         source.close()
@@ -398,11 +401,25 @@ class PointTier(object):
     def __max__(self):
         raise NotImplementedError
 
-
     def add(self, point):
         # FIXME: there are better ways to keep a list sorted
         self.points.append(point)
         self.points.sort()
+
+    def pointNearest(self, point, maxSep):
+        """
+        Returns the Point object contained by this PointTier that is nearest the
+        given point in time (which may be a Point object or a float), without
+        being more than maxSep seconds distant from it. Pass maxSep=None for no
+        restriction. If no satisfying point can be found, None is returned.
+        """
+        maxSep = maxSep or sys.maxint
+        nearestP = None
+        for p in self.points:
+            d = abs(p - point)
+            if ((not nearestP) or d < abs(nearestP - point)) and (d <= maxSep):
+                nearestP = p
+        return nearestP
 
     def read(self, file):
         """
@@ -494,21 +511,30 @@ class Point(object):
     def __init__(self, time, mark):
         self.time = time
         self.mark = mark
-    
 
     def __str__(self):
         return '<Point "%s" at %f>' % (self.mark, self.time)
 
-
     def __repr__(self):
         return "Point(%r, %r)" % (self.time, self.mark)
-
 
     def __cmp__(self, other):
         if isinstance(other, Point):
             return cmp(self.time, other.time)
         else:
             return cmp(self.time, other)
+
+    def __sub__(self, other):
+        if isinstance(other, Point):
+            return self.time - other.time
+        else:
+            return self.time - other
+
+    def __add__(self, other):
+        if isinstance(other, Point):
+            return self.time + other.time
+        else:
+            return self.time + other
 
 if __name__ == '__main__':
     raise NotImplementedError
