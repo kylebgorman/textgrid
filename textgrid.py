@@ -135,14 +135,14 @@ class TextGrid(object):
 
     def getfirst(self, tierName):
         for t in self.tiers:
-            if t.name() == tierName:
+            if t.name == tierName:
                 return t
         return None
 
     def getall(self, tierName):
         tiers = []
         for t in self.tiers:
-            if t.name() == tierName:
+            if t.name == tierName:
                 tiers.append(t)
         return tiers
 
@@ -151,9 +151,9 @@ class TextGrid(object):
         Returns a list of the names (strings) of the intervals contained in this
         TextGrid, in order.
         """
-        names = [t.name() for t in self.tiers]
+        names = [t.name for t in self.tiers]
         if case == "lower":
-            names = [n.lower() for n in names]
+            return [n.lower() for n in names]
         return names
 
 
@@ -188,37 +188,37 @@ class TextGrid(object):
         reading.
         """
         source = f if isinstance(f, file) else open(f, 'r')
-        source.readline() # header crap
-        source.readline()
-        source.readline()
-        source.readline()
+        for i in xrange(6):
+            source.readline() # header crap
         m = int(source.readline().rstrip().split()[2]) # will be self.n soon
         source.readline()
         for i in xrange(m): # loop over grids
             source.readline()
             if source.readline().rstrip().split()[2] == '"IntervalTier"': 
-                inam = source.readline().rstrip().split()[2][1:-1]
+                inam = source.readline().rstrip().split(' = ')[1].strip('"')
                 imin = float(source.readline().rstrip().split()[2])
                 imax = float(source.readline().rstrip().split()[2])
-                itie = IntervalTier(inam, imin, imax) 
-                for j in xrange(int(source.readline().rstrip().split()[3]):
+                #itie = IntervalTier(inam, imin, imax) 
+                itie = IntervalTier(inam)
+                for j in xrange(int(source.readline().rstrip().split()[3])):
                     source.readline().rstrip().split() # header junk
                     jmin = float(source.readline().rstrip().split()[2])
                     jmax = float(source.readline().rstrip().split()[2])
                     jmrk = self._getMark(source)
-                    itie.append(Interval(jmin, jmax, jmrk))
+                    itie.add(Interval(jmin, jmax, jmrk))
                 self.append(itie) 
             else: # pointTier
-                inam = source.readline().rstrip().split()[2][1:-1]
+                inam = source.readline().rstrip().split(' = ')[1].strip('"')
                 imin = float(source.readline().rstrip().split()[2])
                 imax = float(source.readline().rstrip().split()[2])
-                itie = PointTier(inam, imin, imax) 
+                #itie = PointTier(inam, imin, imax) 
+                itie = PointTier(inam)
                 n = int(source.readline().rstrip().split()[3])
                 for j in range(n):
                     source.readline().rstrip() # header junk
                     jtim = float( source.readline().rstrip().split()[2])
                     jmrk = source.readline().rstrip().split()[2][1:-1]
-                    itie.append(Point(jtim, jmrk))
+                    itie.add(Point(jtim, jmrk))
                 self.append(itie)
         source.close()
 
@@ -303,7 +303,7 @@ class IntervalTier(object):
     def add(self, interval):
         # FIXME: there are better ways to keep a list sorted
         self.intervals.append(interval)
-        self.interval.sort()
+        self.intervals.sort()
 
 
     def remove(self, interval):
@@ -413,7 +413,7 @@ class PointTier(object):
         source.readline() # header junk 
         source.readline()
         source.readline()
-        for i in xrange(int(source.readline().rstrip().split()[3]))
+        for i in xrange(int(source.readline().rstrip().split()[3])):
             source.readline().rstrip() # header
             itim = float(source.readline().rstrip().split()[2])
             imrk = source.readline().rstrip().split()[2].replace('"', '') 
