@@ -28,7 +28,6 @@
 #
 # classes for Praat TextGrid data structures, and HTK .mlf files
 
-#FIXME
 """
 Module docs here.
 """
@@ -137,11 +136,11 @@ class Interval(object):
 
 
     def __cmp__(self, other):
-        """ 
-        This currently needs some attention. Use at your own risk
-        """
         if isinstance(other, Interval):
-            raise NotImplementedError
+            if self.overlaps(other):
+                raise ValueError, '%r and %r overlap' % (self, other))
+            # given that the two intervals do not overlap:
+            return cmp(self.minTime, other.minTime)
         elif isinstance(other, Point):
             return cmp(self.minTime, other.time) + \
                    cmp(self.maxTime, other.time)
@@ -149,11 +148,18 @@ class Interval(object):
             return cmp(self.minTime, other) + cmp(self.maxTime, other)
 
 
+    def overlaps(self, otherInterval):
+        """
+        Tests whether this interval overlaps with the given interval. Symmetric.
+        """
+        # how elegant: http://www.rgrjr.com/emacs/overlap.html
+        return other.minTime < self.maxTime and self.minTime < other.maxTime
+
+
     def __contains__(self, other):
         """
-        Tests whether the given time point is contained in this interval. x may
-        be a numeric type, or a Point object.
-
+        Tests whether the given time point is contained in this interval, either
+        a numeric type or a Point object.
         """
         if isinstance(other, Point):
             return self.minTime <= other.time <= self.maxTime
@@ -162,7 +168,7 @@ class Interval(object):
 
 
     def bounds(self):
-        return (self.xmin, self.xmax)
+        return (self.minTime, self.maxTime)
 
 
 class PointTier(object):
@@ -210,6 +216,29 @@ class PointTier(object):
         return self.points[i]
 
 
+    def getfirst(self, tierName):
+        for t in self.tiers:
+            if t.name == tierName:
+                return t
+        return None
+
+
+    def getlist(self, tierName):
+        tiers = []
+        for t in self.tiers:
+            if t.name == tierName:
+                tiers.append(t)
+        return tiers
+
+
+    def tierNames(self):
+        """
+        Returns a list of the names (strings) of the intervals contained in this
+        TextGrid, in order.
+        """
+        return [tier.name for tier in self.tiers]
+
+
     def __min__(self):
         return self.points[0].time
 
@@ -245,12 +274,11 @@ class PointTier(object):
 
     def read(self, file):
         """
-        Read the points contained in the Praat-format PointTier/TextTier file 
-        named by the given string, and add those points to self. If the
-        source PointTier file is malformed, this will not fix things.
+        Read the Intervals contained in the Praat-formated IntervalTier file 
+        and append those tiers. f may be a file object to read from, or a 
+        string naming a path for reading
         """
-        #FIXME doctest
-        source = open(file, 'r')
+        source = f if isinstance(f, file) else open(f, 'r')
         source.readline() # header junk 
         source.readline()
         source.readline()
@@ -259,16 +287,14 @@ class PointTier(object):
             itim = float(source.readline().rstrip().split()[2])
             imrk = source.readline().rstrip().split()[2].replace('"', '') 
             self.points.append(Point(imrk, itim))
-        source.close()
 
 
-    def write(self, file):
+    def write(self, f):
         """
-        Write the current state into a Praat-format PointTier/TextTier file 
-        named by the given string
+        Write the current state into a Praat-format PointTier/TextTier file. f
+        may be a file object to write to, or a string naming a path for writing
         """
-        #FIXME doctest
-        sink = open(file, 'w')
+        sink = f if isinstance(f, file) else open(f, 'w')
         sink.write('File type = "ooTextFile"\n')
         sink.write('Object class = "TextTier"\n\n')
         sink.write('xmin = %f\n' % min(self))
@@ -352,10 +378,10 @@ class IntervalTier(object):
     def read(self, file):
         """
         Read the tiers contained in the Praat-format IntervalTier file named by
-        the given string, and append those tiers to self.  If the source 
-        IntervalTier file is malformed, this will not fix things.
+        the given string, and append those tiers to self. f may be a file
+        object to read from, or a string naming the path to open for reading
         """
-        source = open(file, 'r')
+        source = f if isinstance(f, file) else open(f, 'r')
         source.readline() # header junk 
         source.readline()
         source.readline()
@@ -371,10 +397,10 @@ class IntervalTier(object):
 
     def write(self, file):
         """
-        Write the current state into a Praat-format IntervalTier file named by 
-        the given string
+        Write the current state into a Praat-format IntervalTier file. f may be
+        a file object to write to, or a string naming a path for writing
         """
-        sink = open(file, 'w')
+        sink = f if isinstance(f, file) else open(f, 'w')
         sink.write('File type = "ooTextFile"\n')
         sink.write('Object class = "IntervalTier"\n\n')
         sink.write('xmin = %f\n' % min(self))
@@ -479,51 +505,52 @@ class TextGrid(object):
         return a.groups()[2][1:-1]
 
 
-    def read(self, file):
+    def read(self, f):
         """ 
-        Read the tiers contained in the Praat-format TextGrid file named by the
-        given string, and append those tiers to self.
+        Read the tiers contained in a Praat-format TextGrid file. f may be a
+        file object to read from, or a string naming the path for reading
         """
-        source = open(file, 'r')
-        source.readline() # header crap
+        source = f if isinstance(f, file) else open(f, 'r')
+        for i in xrange(6):
+            source.readline() # header crap
+        m = int(source.readline().rstrip().split()[2]) # will be self.n soon
         source.readline()
-        source.readline()
-        source.readline()
-        source.readline()
-        for i in xrange(int(source.readline().rstrip().split()[2])):
+        for i in xrange(m): # loop over grids
             source.readline()
             if source.readline().rstrip().split()[2] == '"IntervalTier"': 
-                inam = source.readline().rstrip().split()[2][1:-1]
+                inam = source.readline().rstrip().split(' = ')[1].strip('"')
                 imin = float(source.readline().rstrip().split()[2])
                 imax = float(source.readline().rstrip().split()[2])
-                itie = IntervalTier(inam, imin, imax) 
+                itie = IntervalTier(inam)
                 for j in xrange(int(source.readline().rstrip().split()[3])):
                     source.readline().rstrip().split() # header junk
                     jmin = float(source.readline().rstrip().split()[2])
                     jmax = float(source.readline().rstrip().split()[2])
                     jmrk = self._getMark(source)
-                    itie.append(Interval(jmin, jmax, jmrk))
+                    itie.add(Interval(jmin, jmax, jmrk))
                 self.append(itie) 
             else: # pointTier
-                inam = source.readline().rstrip().split()[2][1:-1]
+                inam = source.readline().rstrip().split(' = ')[1].strip('"')
                 imin = float(source.readline().rstrip().split()[2])
                 imax = float(source.readline().rstrip().split()[2])
-                itie = PointTier(inam, imin, imax) 
-                for j in range(int(source.readline().rstrip().split()[3])):
+                #itie = PointTier(inam, imin, imax) 
+                itie = PointTier(inam)
+                n = int(source.readline().rstrip().split()[3])
+                for j in range(n):
                     source.readline().rstrip() # header junk
                     jtim = float( source.readline().rstrip().split()[2])
                     jmrk = source.readline().rstrip().split()[2][1:-1]
-                    itie.append(Point(jtim, jmrk))
+                    itie.add(Point(jtim, jmrk))
                 self.append(itie)
         source.close()
 
 
-    def write(self, file):
+    def write(self, f):
         """
-        Write the current state into a Praat-format TextGrid file named by the
-        given string
+        Write the current state into a Praat-format TextGrid file. f may be a
+        file object to write to, or a string naming a path to open for writing.
         """
-        sink = open(file, 'w')
+        sink = f if isinstance(f, file) else open(f, 'w')
         sink.write('File type = "ooTextFile"\n')
         sink.write('Object class = "TextGrid"\n\n')
         sink.write('xmin = %f\n' % min(self))
@@ -533,7 +560,7 @@ class TextGrid(object):
         sink.write('item []:\n')
         for (i, tier) in enumerate(self.tiers):
             sink.write('\titem [%d]:\n' % i + 1)
-            if isinstance(tier, IntervalTier):
+            if tier.__class__ == IntervalTier: 
                 sink.write('\t\tclass = "IntervalTier"\n')
                 sink.write('\t\tname = "%s"\n' % tier.name)
                 sink.write('\t\txmin = %f\n' % min(tier))
@@ -558,7 +585,6 @@ class TextGrid(object):
 
 
 class mlf(object):
-
     """
     Read in a HTK .mlf file. iterating over it gives you a list of 
     TextGrids
@@ -609,7 +635,6 @@ class mlf(object):
         """ 
         """
         raise NotImplementedError
-
 
 
 if __name__ == '__main__':
