@@ -138,7 +138,7 @@ class Interval(object):
     def __cmp__(self, other):
         if isinstance(other, Interval):
             if self.overlaps(other):
-                raise ValueError, '%r and %r overlap' % (self, other))
+                raise ValueError, '%r and %r overlap' % (self, other)
             # given that the two intervals do not overlap:
             return cmp(self.minTime, other.minTime)
         elif isinstance(other, Point):
@@ -148,7 +148,7 @@ class Interval(object):
             return cmp(self.minTime, other) + cmp(self.maxTime, other)
 
 
-    def overlaps(self, otherInterval):
+    def overlaps(self, other):
         """
         Tests whether this interval overlaps with the given interval. Symmetric.
         """
