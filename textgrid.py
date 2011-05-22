@@ -34,7 +34,7 @@ Module docs here.
 """
 
 import re
-from bisect import * # fixme
+from bisect import bisect_left
 
 class Point(object):
     """ 
