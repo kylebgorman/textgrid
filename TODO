@@ -1,7 +1,5 @@
-5/15/11 (KG & MB):
+5/24/11 (KG):
 
 * module level docstring is needed
-* Interval: write an appropriate interval.__cmp__ method for Interval/Interval comparison
-* IntervalTier: write __min__, __max__, add, addInterval, removeInterval, intervalContaining (following the logic used in PointTier...), and more class-level doctests
-* TextGrid: write getfirst (accepts a string arg, returns first tier with that name), getlist (accepts a string arg, returns list of tiers with that name in order), and class-level doctests
 * mlf: needs to be generalized considerably, and needs doctests, and a write method that'll dump every TextGrid into the appropriately-named file (this is the normal use-case, IMO)
+* need to test read and write

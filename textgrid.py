@@ -92,6 +92,7 @@ class Point(object):
             return cmp(self.time, other)
 
 
+
 class Interval(object):
     """ 
     Represents an interval of time, with an associated textual mark, as stored
@@ -118,14 +119,6 @@ class Interval(object):
 
     def __repr__(self):
         return 'Interval(%r, %r, %r)' % (self.minTime, self.maxTime, self.mark)
-
-
-    def __min__(self):
-        return self.minTime
-
-
-    def __max__(self):
-        return self.maxTime
 
 
     def __len__(self):
@@ -189,7 +182,8 @@ class Interval(object):
 class PointTier(object):
     """ 
     Represents Praat PointTiers (also called TextTiers) as list of Points
-    (e.g., for point in pointtier)
+    (e.g., for point in pointtier). A PointTier is used much like a Python
+    set in that it has add/remove methods, not append/extend methods.
 
     >>> foo = PointTier('foo')
     >>> foo.add(4.0, 'bar')
@@ -230,12 +224,10 @@ class PointTier(object):
         return self.points[i]
 
 
-    def __min__(self):
-        return self.points[0].time
-
-
-    def __max__(self):
-        return self.points[-1].time 
+    def _fixBoundaries(self):
+        if self.points:
+            self.minTime = self.points[0].time
+            self.maxTime = self.points[-1].time
 
 
     def add(self, time, mark):
@@ -250,6 +242,7 @@ class PointTier(object):
         if i != len(self.points) and self.points[i] == point:
             raise ValueError, '%r already at this time' % self.points[i]
         self.points.insert(i, point)
+        self._fixBoundaries()
 
 
     def remove(self, time, mark):
@@ -261,11 +254,12 @@ class PointTier(object):
 
     def removePoint(self, point):
         self.points.remove(point)
+        self._fixBoundaries()
 
 
     def read(self, file):
         """
-        Read the Intervals contained in the Praat-formated IntervalTier file 
+        Read the Points contained in the Praat-formated PointTier/TextTier file 
         and append those tiers. f may be a file object to read from, or a 
         string naming a path for reading
         """
@@ -278,6 +272,7 @@ class PointTier(object):
             itim = float(source.readline().rstrip().split()[2])
             imrk = source.readline().rstrip().split()[2].replace('"', '') 
             self.points.append(Point(imrk, itim))
+        self._fixBoundaries()
 
 
     def write(self, f):
@@ -298,10 +293,15 @@ class PointTier(object):
         sink.close()
 
 
+    def bounds(self):
+        return self.minTime, self.maxTime
+
+
 class IntervalTier(object):
     """ 
     Represents Praat IntervalTiers as list of sequence types of Intervals 
-    (e.g., for interval in intervaltier)
+    (e.g., for interval in intervaltier). An IntervalTier is used much like a 
+    Python set in that it has add/remove methods, not append/extend methods.
 
     >>> foo = IntervalTier('foo')
     >>> foo.add(0.0, 2.0, 'bar')
@@ -350,12 +350,10 @@ class IntervalTier(object):
         return self.intervals[i]
 
 
-    def __min__(self):
-        return self.intervals[0].minTime
-
-
-    def __max__(self):
-        return self.intervals[-1].minTime
+    def _fixBoundaries(self):
+        if self.intervals:
+            self.minTime = self.intervals[0].minTime
+            self.maxTime = self.intervals[-1].maxTime
 
 
     def add(self, minTime, maxTime, mark):
@@ -367,7 +365,9 @@ class IntervalTier(object):
         if i != len(self.intervals) and self.intervals[i] == interval:
             raise ValueError, '%r already at this span' % self.intervals[i]
         self.intervals.insert(i, interval)
-        
+        self._fixBoundaries()
+
+    
 
     def remove(self, minTime, maxTime, mark):
         self.removeInterval(Interval(minTime, maxTime, mark))
@@ -375,6 +375,7 @@ class IntervalTier(object):
 
     def removeInterval(self, interval):
         self.intervals.remove(interval)
+        self._fixBoundaries()
 
 
     def intervalContaining(self, time):
@@ -407,6 +408,7 @@ class IntervalTier(object):
             imrk = source.readline().rstrip().split()[2].replace('"', '') # txt
             self.intervals.append(Interval(imin, imax, imrk))
         source.close()
+        self._fixBoundaries()
 
 
     def write(self, file):
@@ -428,11 +430,38 @@ class IntervalTier(object):
         sink.close()
 
 
+    def bounds(self):
+        return self.minTime, self.maxTime
+
+
 class TextGrid(object):
     """ 
     Represents Praat TextGrids as list of sequence types of tiers (e.g., for
     tier in textgrid), and as map from names to tiers (e.g.,
-    textgrid['tierName']). 
+    textgrid['tierName']). Whereas the *Tier classes that make up a TextGrid
+    impose a strict ordering on Points/Intervals, a TextGrid instance is 
+    given order by the user. Like a true Python list, there are append/extend
+    methods for a TextGrid.
+
+    >>> foo = TextGrid('foo')
+    >>> bar = PointTier('bar')
+    >>> bar.add(1.0, 'spam')
+    >>> bar.add(2.75, 'eggs')
+    >>> baz = IntervalTier('baz')
+    >>> baz.add(0.0, 2.5, 'spam')
+    >>> baz.add(2.5, 3.5, 'eggs')
+    >>> foo.extend([bar, baz])
+    >>> foo.append(bar) # now there are two copies of bar in the TextGrid
+    >>> foo.minTime
+    0.0
+    >>> foo.maxTime
+    3.5
+    >>> foo.getfirst('bar')
+    PointTier('bar', [Point(1.0, 'spam'), Point(2.75, 'eggs')])
+    >>> foo.getlist('bar')[1]
+    PointTier('bar', [Point(1.0, 'spam'), Point(2.75, 'eggs')])
+    >>> foo.getnames()
+    ['bar', 'baz', 'bar']
     """
 
     def __init__(self, name=None, file=None): 
@@ -454,7 +483,7 @@ class TextGrid(object):
 
 
     def __repr__(self):
-        return "TextGrid(%r, %r)" % (self.name, self.tiers)
+        return 'TextGrid(%r, %r)' % (self.name, self.tiers)
 
 
     def __iter__(self):
@@ -476,7 +505,6 @@ class TextGrid(object):
         for t in self.tiers:
             if t.name == tierName:
                 return t
-        return None
 
 
     def getlist(self, tierName):
@@ -494,21 +522,25 @@ class TextGrid(object):
         return [tier.name for tier in self.tiers]
 
 
-    def __min__(self):
-        return min(min(tier) for tier in self.tiers)
-
-
-    def __max__(self):
-        return max(max(tier) for tier in self.tiers)
+    def _fixBoundaries(self):
+        if self.tiers:
+            self.minTime = min([tier.minTime for tier in self.tiers])
+            self.maxTime = max([tier.maxTime for tier in self.tiers])
 
 
     def append(self, tier):
-        self.tier.append(tier)
+        self.tiers.append(tier)
+        self._fixBoundaries()
 
 
     def extend(self, tiers):
-        for tier in tiers:
-            self.tier.append(tier)
+        self.tiers.extend(tiers)
+        self._fixBoundaries()
+
+
+    def pop(self, i):
+        self.tiers.pop(i)
+        self._fixBoundaries()
 
 
     @staticmethod
@@ -526,7 +558,7 @@ class TextGrid(object):
         """
         source = f if isinstance(f, file) else open(f, 'r')
         for i in xrange(6):
-            source.readline() # header crap
+            source.readline() # header junk
         m = int(source.readline().rstrip().split()[2]) # will be self.n soon
         source.readline()
         for i in xrange(m): # loop over grids
@@ -547,10 +579,9 @@ class TextGrid(object):
                 inam = source.readline().rstrip().split(' = ')[1].strip('"')
                 imin = float(source.readline().rstrip().split()[2])
                 imax = float(source.readline().rstrip().split()[2])
-                #itie = PointTier(inam, imin, imax) 
                 itie = PointTier(inam)
                 n = int(source.readline().rstrip().split()[3])
-                for j in range(n):
+                for j in xrange(n):
                     source.readline().rstrip() # header junk
                     jtim = float( source.readline().rstrip().split()[2])
                     jmrk = source.readline().rstrip().split()[2][1:-1]
