@@ -98,7 +98,7 @@ class Interval(object):
     in an IntervalTier.
 
     >>> foo = Point(3.0, 'foo')
-    >>> bar = Point(3.0, 'bar')
+    >>> bar = Point(4.0, 'bar')
     >>> baz = Interval(3.0, 5.0, 'baz')
     >>> foo in baz
     True
@@ -148,11 +148,26 @@ class Interval(object):
             return cmp(self.minTime, other) + cmp(self.maxTime, other)
 
 
+    def __eq__(self, other):
+        """
+        this might seem superfluous but not that a ValueError will be raised
+        if you compare two intervals to themselves...not anymore though
+        """
+        if isinstance(other, Interval):
+            if self.minTime == other.minTime:
+                if self.maxTime == other.maxTime:
+                    return True
+        elif isinstance(other, Point):
+            return self.minTime < other.time < self.maxTime
+        else:
+            return False
+
+
     def overlaps(self, other):
         """
-        Tests whether this interval overlaps with the given interval. Symmetric.
+        Tests whether self overlaps with the given interval. Symmetric.
+        how elegant: http://www.rgrjr.com/emacs/overlap.html
         """
-        # how elegant: http://www.rgrjr.com/emacs/overlap.html
         return other.minTime < self.maxTime and self.minTime < other.maxTime
 
 
@@ -191,7 +206,6 @@ class PointTier(object):
         self.points = []
         if file:
             self.read(file)
-            # name is ignored
         else:
             self.name = name
 
@@ -216,29 +230,6 @@ class PointTier(object):
         return self.points[i]
 
 
-    def getfirst(self, tierName):
-        for t in self.tiers:
-            if t.name == tierName:
-                return t
-        return None
-
-
-    def getlist(self, tierName):
-        tiers = []
-        for t in self.tiers:
-            if t.name == tierName:
-                tiers.append(t)
-        return tiers
-
-
-    def tierNames(self):
-        """
-        Returns a list of the names (strings) of the intervals contained in this
-        TextGrid, in order.
-        """
-        return [tier.name for tier in self.tiers]
-
-
     def __min__(self):
         return self.points[0].time
 
@@ -257,7 +248,7 @@ class PointTier(object):
     def addPoint(self, point):
         i = bisect_left(self.points, point)
         if i != len(self.points) and self.points[i] == point:
-            raise ValueError, '%r already exists at this time'
+            raise ValueError, '%r already at this time' % self.points[i]
         self.points.insert(i, point)
 
 
@@ -311,13 +302,30 @@ class IntervalTier(object):
     """ 
     Represents Praat IntervalTiers as list of sequence types of Intervals 
     (e.g., for interval in intervaltier)
+
+    >>> foo = IntervalTier('foo')
+    >>> foo.add(0.0, 2.0, 'bar')
+    >>> foo.add(2.0, 2.5, 'baz')
+    >>> foo
+    IntervalTier('foo', [Interval(0.0, 2.0, 'bar'), Interval(2.0, 2.5, 'baz')])
+    >>> foo.remove(0.0, 2.0, 'bar')
+    >>> foo
+    IntervalTier('foo', [Interval(2.0, 2.5, 'baz')])
+    >>> foo.add(0.0, 1.0, 'bar')
+    >>> foo
+    IntervalTier('foo', [Interval(0.0, 1.0, 'bar'), Interval(2.0, 2.5, 'baz')])
+    >>> foo.add(1.0, 3.0, 'baz')
+    Traceback (most recent call last):
+        ...
+    ValueError: Interval(2.0, 2.5, 'baz') and Interval(1.0, 3.0, 'baz') overlap
+    >>> foo.intervalContaining(2.25)
+    Interval(2.0, 2.5, 'baz')
     """
 
     def __init__(self, name=None, file=None):
         self.intervals = []
         if file:
             self.read(file)
-            # name is ignored
         else:
             self.name = name
 
@@ -327,7 +335,7 @@ class IntervalTier(object):
 
 
     def __repr__(self):
-        return 'IntervalTier(%r, %r)', (self.name, self.intervals)
+        return 'IntervalTier(%r, %r)' % (self.name, self.intervals)
 
 
     def __iter__(self):
@@ -343,36 +351,42 @@ class IntervalTier(object):
 
 
     def __min__(self):
-        raise NotImplementedError
+        return self.intervals[0].minTime
 
 
     def __max__(self):
-        raise NotImplementedError
+        return self.intervals[-1].minTime
 
 
     def add(self, minTime, maxTime, mark):
         self.addInterval(Interval(minTime, maxTime, mark))
 
 
-    def addInterval(self, Interval):
-        raise NotImplementedError
+    def addInterval(self, interval):
+        i = bisect_left(self.intervals, interval)
+        if i != len(self.intervals) and self.intervals[i] == interval:
+            raise ValueError, '%r already at this span' % self.intervals[i]
+        self.intervals.insert(i, interval)
         
 
     def remove(self, minTime, maxTime, mark):
         self.removeInterval(Interval(minTime, maxTime, mark))
 
 
-    def removeInterval(self, Interval):
-        raise NotImplementedError
+    def removeInterval(self, interval):
+        self.intervals.remove(interval)
 
 
-    def intervalContaining(self, point):
+    def intervalContaining(self, time):
         """
         Returns the interval containing the given time point, or None if the
         time point is outside the bounds of this tier. point may either be a
         numeric type, or a Point object.
         """
-        raise NotImplementedError
+        i = bisect_left(self.intervals, time) 
+        if i != len(self.intervals):
+            if self.intervals[i].minTime < time < self.intervals[i].maxTime: 
+                return self.intervals[i]
 
 
     def read(self, file):
@@ -458,21 +472,21 @@ class TextGrid(object):
         return self.tiers[i]
 
 
-    def getfirst(self, string):
-        """
-        returns the first tier with a name matching string
-        """
-        raise NotImplementedError        
+    def getfirst(self, tierName):
+        for t in self.tiers:
+            if t.name == tierName:
+                return t
+        return None
 
 
-    def getlist(self, string):
-        """
-        returns all tiers with a name matching string (Praat allows tiers with
-        the same name in a TextGrid)
-        """
-        raise NotImplementedError
+    def getlist(self, tierName):
+        tiers = []
+        for t in self.tiers:
+            if t.name == tierName:
+                tiers.append(t)
+        return tiers
 
-    
+
     def getnames(self):
         """
         return a list of the names of the intervals contained in this TextGrid
