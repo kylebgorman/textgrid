@@ -1,5 +1,5 @@
-5/24/11 (KG):
+5/30/11 (KG):
 
 * module level docstring is needed
-* mlf: needs to be generalized considerably, and needs doctests, and a write method that'll dump every TextGrid into the appropriately-named file (this is the normal use-case, IMO)
-* need to test read and write
+* for read functions, replace string hacking with valid regexps where possible
+* need doctests for all read/write method pairs (also test with Praat). i'm currently building this in RWtests.py

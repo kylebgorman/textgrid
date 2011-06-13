@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # 
-# Copyright (c) 2011 Kyle Gorman, Morgan Sonderegger, Max Bane 
+# Copyright (c) 2011 Kyle Gorman, Max Bane, Morgan Sonderegger
 # 
 # Permission is hereby granted, free of charge, to any person obtaining a copy
 # of this software and associated documentation files (the "Software"), to deal
@@ -33,6 +33,8 @@ Module docs here.
 """
 
 import re
+import os.path
+from math import exp, log
 from bisect import bisect_left
 
 class Point(object):
@@ -90,7 +92,6 @@ class Point(object):
                    cmp(self.time, other.maxTime)
         else: # hopefully numerical
             return cmp(self.time, other)
-
 
 
 class Interval(object):
@@ -230,6 +231,14 @@ class PointTier(object):
             self.maxTime = self.points[-1].time
 
 
+    def __min__(self):
+        return self.minTime
+
+
+    def __max__(self):
+        return self.maxTime
+
+
     def add(self, time, mark):
         """ 
         constructs a Point and adds it to the PointTier, maintaining order
@@ -356,6 +365,14 @@ class IntervalTier(object):
             self.maxTime = self.intervals[-1].maxTime
 
 
+    def __min__(self):
+        return self.minTime
+
+
+    def __max__(self):
+        return self.maxTime
+
+
     def add(self, minTime, maxTime, mark):
         self.addInterval(Interval(minTime, maxTime, mark))
 
@@ -367,7 +384,6 @@ class IntervalTier(object):
         self.intervals.insert(i, interval)
         self._fixBoundaries()
 
-    
 
     def remove(self, minTime, maxTime, mark):
         self.removeInterval(Interval(minTime, maxTime, mark))
@@ -528,6 +544,14 @@ class TextGrid(object):
             self.maxTime = max([tier.maxTime for tier in self.tiers])
 
 
+    def __min__(self):
+        return self.minTime
+
+
+    def __max__(self):
+        return self.maxTime
+
+
     def append(self, tier):
         self.tiers.append(tier)
         self._fixBoundaries()
@@ -538,16 +562,17 @@ class TextGrid(object):
         self._fixBoundaries()
 
 
-    def pop(self, i):
-        self.tiers.pop(i)
+    def pop(self, i=None):
+        if i:
+            self.tiers.pop(i)
+        else:
+            self.tiers.pop()
         self._fixBoundaries()
 
 
     @staticmethod
     def _getMark(text):
         a = re.search('(\S+) (=) (".*")', text.readline().rstrip())
-        assert(a)
-        assert(len(a.groups()) == 3)
         return a.groups()[2][1:-1]
 
 
@@ -598,24 +623,24 @@ class TextGrid(object):
         sink = f if isinstance(f, file) else open(f, 'w')
         sink.write('File type = "ooTextFile"\n')
         sink.write('Object class = "TextGrid"\n\n')
-        sink.write('xmin = %f\n' % min(self))
-        sink.write('xmax = %f\n' % max(self))
+        sink.write('xmin = %f\n' % self.minTime)
+        sink.write('xmax = %f\n' % self.maxTime)
         sink.write('tiers? <exists>\n')
         sink.write('size = %d\n' % len(self))
         sink.write('item []:\n')
         for (i, tier) in enumerate(self.tiers):
-            sink.write('\titem [%d]:\n' % i + 1)
+            sink.write('\titem [%d]:\n' % (i + 1))
             if tier.__class__ == IntervalTier: 
                 sink.write('\t\tclass = "IntervalTier"\n')
                 sink.write('\t\tname = "%s"\n' % tier.name)
-                sink.write('\t\txmin = %f\n' % min(tier))
-                sink.write('\t\txmax = %f\n' % min(tier))
+                sink.write('\t\txmin = %f\n' % tier.minTime)
+                sink.write('\t\txmax = %f\n' % tier.maxTime)
                 sink.write('\t\tintervals: size = %d\n' % len(tier))
                 for (j, interval) in enumerate(tier):
-                    sink.write('\t\t\tintervals [%d]:\n' % j + 1)
-                    sink.write('\t\t\t\txmin = %f\n' % interval.xmin)
-                    sink.write('\t\t\t\txmax = %f\n' % interval.xmax)
-                    sink.write('\t\t\t\tsink = "%s"\n' % interval.mark)
+                    sink.write('\t\t\tintervals [%d]:\n' % (j + 1))
+                    sink.write('\t\t\t\txmin = %f\n' % interval.minTime)
+                    sink.write('\t\t\t\txmax = %f\n' % interval.maxTime)
+                    sink.write('\t\t\t\ttext = "%s"\n' % interval.mark)
             else: # PointTier
                 sink.write('\t\tclass = "TextTier"\n')
                 sink.write('\t\tname = "%s"\n' % tier.name)
@@ -629,21 +654,51 @@ class TextGrid(object):
         sink.close()
 
 
-class mlf(object):
+class MLF(object):
     """
-    Read in a HTK .mlf file. iterating over it gives you a list of 
-    TextGrids
+    Read in a HTK .mlf file generated with HVite -o SM and turn it into a list 
+    of TextGrids. The resulting class can be iterated over to give one TextGrid
+    at a time, or the write(prefix='') class method can be used to write all 
+    the resulting TextGrids into separate files
     """
 
     def __init__(self, file, samplerate=10e6):
-        """ doctest """
-        self.files = []
-        source = open(file, 'r')
+        self.grids = []
+        self.read(file, samplerate)
+
+
+    def __iter__(self):
+        return iter(self.grids)
+
+
+    def __str__(self):
+        return '<MLF with %d TextGrids>' % len(self)
+
+
+    def __repr__(self):
+        return "MLF(%r)" % self.grids
+
+
+    def __len__(self):
+        return len(self.grids)
+
+
+    def __getitem__(self, i):
+        """ 
+        Return the ith TextGrid
+        """
+        return self.grids[i]
+
+
+    def read(self, f, samplerate):
+        source = f if isinstance(f, file) else open(f, 'r')
         source.readline() # get rid of header
+        samplerate = float(samplerate)
         while 1: # loop over text
-            name = source.readline()[1:-1]
+            name = re.match('\"(.*)\"', source.readline().rstrip())
             if name:
-                grid = TextGrid()
+                name = name.groups()[0]
+                grid = TextGrid(name)
                 phon = IntervalTier('phones')
                 word = IntervalTier('words')
                 wmrk = ''
@@ -652,22 +707,22 @@ class mlf(object):
                 while 1: # loop over the lines in each grid
                     line = source.readline().rstrip().split()
                     if len(line) == 4: # word on this baby
-                        pmin = float(line[0]) / samplerate
-                        pmax = float(line[1]) / samplerate
-                        phon.append(Interval(pmin, pmax, line[2]))
+                        pmin = round(float(line[0]) / samplerate, 5)
+                        pmax = round(float(line[1]) / samplerate, 5)
+                        phon.add(pmin, pmax, line[2])
                         if wmrk:
-                            word.append(Interval(wsrt, wend, wmrk))
+                            word.add(wsrt, wend, wmrk)
                         wmrk = line[3]
                         wsrt = pmin
                         wend = pmax
                     elif len(line) == 3: # just phone
-                        pmin = float(line[0]) / samplerate
-                        pmax = float(line[1]) / samplerate
-                        phon.append(Interval(pmin, pmax, line[2]))
-                        wend = pmax 
+                        pmin = round(float(line[0]) / samplerate, 5)
+                        pmax = round(float(line[1]) / samplerate, 5)
+                        phon.add(pmin, pmax, line[2])
+                        wend = pmax
                     else: # it's a period
-                        word.append(Interval(wsrt, wend, wmrk))
-                        self.files.append(grid)
+                        word.add(wsrt, wend, wmrk)
+                        self.grids.append(grid)
                         break
                 grid.append(phon)
                 grid.append(word)
@@ -678,8 +733,17 @@ class mlf(object):
 
     def write(self, prefix=''):
         """ 
+        Write the current state into Praat-formatted TextGrids. The filenames
+        that the output is stored in are taken from the HTK label files. If 
+        a string argument is given, then the any prefix in the name of the 
+        label file (e.g., "mfc/myLabFile.lab"), it is truncated and files are 
+        written to the directory given by the prefix. An IOError will result
+        if the folder does not exist. 
         """
-        raise NotImplementedError
+        for grid in self.grids:
+            (junk, tail) = os.path.split(grid.name)
+            (root, junk) = os.path.splitext(tail)
+            grid.write(open(os.path.join(prefix, root + '.TextGrid'), 'w'))
 
 
 if __name__ == '__main__':
