@@ -122,9 +122,18 @@ class Interval(object):
         return 'Interval(%r, %r, %r)' % (self.minTime, self.maxTime, self.mark)
 
 
-    def __len__(self):
+    # NO GOOD: Python's built-in len() function automatically coerces its return
+    # value to type int, so this is definitely not the right way to provide
+    # duration
+    #def __len__(self):
+    #    """ 
+    #    returns the length of the interval in seconds
+    #    """
+    #    return self.maxTime - self.minTime
+
+    def duration(self):
         """ 
-        returns the length of the interval in seconds
+        Returns the duration of the interval in seconds.
         """
         return self.maxTime - self.minTime
 
@@ -178,6 +187,7 @@ class Interval(object):
 
     def bounds(self):
         return (self.minTime, self.maxTime)
+    
 
 
 class PointTier(object):
@@ -198,6 +208,7 @@ class PointTier(object):
     """ 
 
     def __init__(self, name=None, file=None):
+        self.minTime, self.maxTime = 0., 0.
         self.points = []
         if file:
             self.read(file)
@@ -332,6 +343,7 @@ class IntervalTier(object):
     """
 
     def __init__(self, name=None, file=None):
+        self.minTime, self.maxTime = 0., 0.
         self.intervals = []
         if file:
             self.read(file)
