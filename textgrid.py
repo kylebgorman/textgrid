@@ -518,12 +518,18 @@ class TextGrid(object):
 
 
     def getfirst(self, tierName):
+        """
+        Return the first tier with the given name.
+        """
         for t in self.tiers:
             if t.name == tierName:
                 return t
 
 
     def getlist(self, tierName):
+        """
+        Return a list of all tiers with the given name.
+        """
         tiers = []
         for t in self.tiers:
             if t.name == tierName:
