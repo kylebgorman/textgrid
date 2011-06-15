@@ -609,7 +609,7 @@ class TextGrid(object):
                     jmin = float(source.readline().rstrip().split()[2])
                     jmax = float(source.readline().rstrip().split()[2])
                     jmrk = self._getMark(source)
-                    itie.add(Interval(jmin, jmax, jmrk))
+                    itie.addInterval(Interval(jmin, jmax, jmrk))
                 self.append(itie) 
             else: # pointTier
                 inam = source.readline().rstrip().split(' = ')[1].strip('"')
@@ -621,7 +621,7 @@ class TextGrid(object):
                     source.readline().rstrip() # header junk
                     jtim = float( source.readline().rstrip().split()[2])
                     jmrk = source.readline().rstrip().split()[2][1:-1]
-                    itie.add(Point(jtim, jmrk))
+                    itie.addPoint(Point(jtim, jmrk))
                 self.append(itie)
         source.close()
 
