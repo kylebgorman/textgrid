@@ -488,10 +488,9 @@ class TextGrid(object):
         instance.
         """
         self.tiers = []
+        self.name = name
         if file:
             self.read(file)
-        else:
-            self.name = name
 
 
     def __str__(self):
