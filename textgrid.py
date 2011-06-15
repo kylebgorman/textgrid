@@ -569,11 +569,16 @@ class TextGrid(object):
 
 
     def pop(self, i=None):
+        """
+        Remove and return tier at index i (default last). Raise IndexError if
+        TextGrid is empty or index is out of range.
+        """
         if i:
-            self.tiers.pop(i)
+            r = self.tiers.pop(i)
         else:
-            self.tiers.pop()
+            r = self.tiers.pop()
         self._fixBoundaries()
+        return r
 
 
     @staticmethod
