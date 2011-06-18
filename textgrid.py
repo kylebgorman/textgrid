@@ -21,20 +21,28 @@
 # THE SOFTWARE.
 # 
 # textgrid.py
+# Classes for Praat TextGrid data structures, and HTK .mlf files
 # 
 # Max Bane <bane@uchicago.edu>
 # Kyle Gorman <kgorman@ling.upenn.edu>
 # Morgan Sonderegger <morgan@cs.uchicago.edu>
-#
-# classes for Praat TextGrid data structures, and HTK .mlf files
 
 """
-Module docs here.
+This module is designed for manipulation of Praat TextGrid, PointTier, and
+IntervalTier files in Python. A class interface is also provided for the .mlf
+files created by HTK (with HVite -o SM), and can be easily used to generate 
+TextGrid files:
+
+#>>> from textgrid import MLF
+#>>> MLF('your_mlf_file.mlf').write('your_output_dir')
+
+This reads the MLF file in 'your_mlf_file.mlf', and writes TextGrids into
+the directory 'your_output_dir/'. 
 """
 
 import re
 import os.path
-from math import exp, log
+
 from bisect import bisect_left
 
 class Point(object):
@@ -122,15 +130,6 @@ class Interval(object):
         return 'Interval(%r, %r, %r)' % (self.minTime, self.maxTime, self.mark)
 
 
-    # NO GOOD: Python's built-in len() function automatically coerces its return
-    # value to type int, so this is definitely not the right way to provide
-    # duration
-    #def __len__(self):
-    #    """ 
-    #    returns the length of the interval in seconds
-    #    """
-    #    return self.maxTime - self.minTime
-
     def duration(self):
         """ 
         Returns the duration of the interval in seconds.
@@ -153,8 +152,8 @@ class Interval(object):
 
     def __eq__(self, other):
         """
-        this might seem superfluous but not that a ValueError will be raised
-        if you compare two intervals to themselves...not anymore though
+        This might seem superfluous but not that a ValueError will be raised
+        if you compare two intervals to each other...not anymore though
         """
         if isinstance(other, Interval):
             if self.minTime == other.minTime:
