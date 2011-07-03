@@ -13,6 +13,9 @@ if __name__ == '__main__':
     import textgrid
     from os import remove
     
+    ## print
+    print 'if this works, you should see "True" twice below...'
+
     ## MLF
     # write MLF file
     open('baz.mlf', 'w').write("""#!MFL!#
@@ -62,9 +65,7 @@ if __name__ == '__main__':
 .
 "bar.lab"
 0 7000000 F FIND
-7000000 13000000 AY
-13000000 16000000 N
-16000000 18000000 D
+7000000 13000000 AY 13000000 16000000 N 16000000 18000000 D
 18000000 24000000 IY ME
 24000000 30000000 AH A
 30000000 33000000 F FLIGHT
@@ -103,21 +104,20 @@ if __name__ == '__main__':
 
     ## TextGrid
     # read foo.TextGrid
-    foo = textgrid.TextGrid('foo.TextGrid')
-    print foo
+    foo = textgrid.TextGridFromFile('foo.TextGrid')
     # write it out
     foo.write('foo_copy.TextGrid')
     # read it back in
-    foo_copy = textgrid.TextGrid('foo_copy.TextGrid')
-    foo == foo_copy
+    foo_copy = textgrid.TextGridFromFile('foo_copy.TextGrid')
+    print repr(foo) == repr(foo_copy)
     
     ## IntervalTier
     phones = foo[0]
     # write it out
     phones.write('phones.IntervalTier')
     # read it back in
-    phones_copy = textgrid.IntervalTier('phones.IntervalTier')
-    phones == phones_copy
+    phones_copy = textgrid.IntervalTierFromFile('phones.IntervalTier', 'phones')
+    print repr(phones) == repr(phones_copy)
 
     ## clean up the mess we've made
     remove('baz.mlf')

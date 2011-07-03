@@ -1,5 +1,4 @@
-5/30/11 (KG):
+7/2/11 (KG):
 
-* module level docstring is needed
-* for read functions, replace string hacking with valid regexps where possible
-* need doctests for all read/write method pairs (also test with Praat). i'm currently building this in RWtests.py
+* consider the merits of using regexps, or some equivalent of fscanf, instead 
+  of split() for parsing text files in the write methods.
