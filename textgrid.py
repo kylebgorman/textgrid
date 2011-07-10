@@ -308,7 +308,7 @@ class PointTier(object):
         for (i, point) in enumerate(self.points):
             sink.write('points [%d]:\n' % i + 1)
             sink.write('\ttime = %f\n' % point.time)
-            sink.write('\ttext = "%s"\n' % point.mark)
+            sink.write('\mark = "%s"\n' % point.mark)
         sink.close()
 
 
