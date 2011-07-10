@@ -466,7 +466,7 @@ class IntervalTier(object):
             sink.write('intervals [%d]:\n' % (i + 1))
             sink.write('\txmin = %f\n' % interval.minTime)
             sink.write('\txmax = %f\n' % interval.maxTime)
-            sink.write('\tmark = "%s"\n' % interval.mark)
+            sink.write('\ttext = "%s"\n' % interval.mark)
         sink.close()
 
 
