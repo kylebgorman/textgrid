@@ -45,6 +45,7 @@ import os.path
 
 from bisect import bisect_left
 
+
 class Point(object):
     """ 
     Represents a point in time with an associated textual mark, as stored in a
@@ -81,11 +82,9 @@ class Point(object):
     def __init__(self, time, mark):
         self.time = time
         self.mark = mark
-    
 
     def __repr__(self):
         return 'Point(%r, %r)' % (self.time, self.mark)
-
 
     def __cmp__(self, other):
         """
@@ -124,11 +123,9 @@ class Interval(object):
         self.minTime = minTime
         self.maxTime = maxTime
         self.mark = mark
-    
 
     def __repr__(self):
         return 'Interval(%r, %r, %r)' % (self.minTime, self.maxTime, self.mark)
-
 
     def duration(self):
         """ 
@@ -136,11 +133,10 @@ class Interval(object):
         """
         return self.maxTime - self.minTime
 
-
     def __cmp__(self, other):
         if isinstance(other, Interval):
             if self.overlaps(other):
-                raise ValueError, '%r and %r overlap' % (self, other)
+                raise(ValueError, '%r and %r overlap' % (self, other))
             # given that the two intervals do not overlap:
             return cmp(self.minTime, other.minTime)
         elif isinstance(other, Point):
@@ -148,7 +144,6 @@ class Interval(object):
                    cmp(self.maxTime, other.time)
         else: 
             return cmp(self.minTime, other) + cmp(self.maxTime, other)
-
 
     def __eq__(self, other):
         """
@@ -164,7 +159,6 @@ class Interval(object):
         else:
             return False
 
-
     def overlaps(self, other):
         """
         Tests whether self overlaps with the given interval. Symmetric.
@@ -172,21 +166,18 @@ class Interval(object):
         """
         return other.minTime < self.maxTime and self.minTime < other.maxTime
 
-
     def __contains__(self, other):
         """
-        Tests whether the given time point is contained in this interval, either
-        a numeric type or a Point object.
+        Tests whether the given time point is contained in this interval, 
+        either a numeric type or a Point object.
         """
         if isinstance(other, Point):
             return self.minTime <= other.time <= self.maxTime
         else:
             return self.minTime <= other <= self.maxTime
 
-
     def bounds(self):
         return (self.minTime, self.maxTime)
-    
 
 
 class PointTier(object):
@@ -212,40 +203,31 @@ class PointTier(object):
         self.points = []
         self.name = name
 
-
     def __str__(self):
         return '<PointTier %r with %d points>' % (self.name, len(self))
-
 
     def __repr__(self):
         return 'PointTier(%r, %r)' % (self.name, self.points)
 
-
     def __iter__(self):
         return iter(self.points)
-    
 
     def __len__(self):
         return len(self.points)
-    
 
     def __getitem__(self, i):
         return self.points[i]
-
 
     def _fixBoundaries(self):
         if self.points:
             self.minTime = self.points[0].time
             self.maxTime = self.points[-1].time
 
-
     def __min__(self):
         return self.minTime
 
-
     def __max__(self):
         return self.maxTime
-
 
     def add(self, time, mark):
         """ 
@@ -253,14 +235,12 @@ class PointTier(object):
         """
         self.addPoint(Point(time, mark))
 
-
     def addPoint(self, point):
         i = bisect_left(self.points, point)
         if i != len(self.points) and self.points[i] == point:
-            raise ValueError, '%r already at this time' % self.points[i]
+            raise(ValueError, '%r already at this time' % self.points[i])
         self.points.insert(i, point)
         self._fixBoundaries()
-
 
     def remove(self, time, mark):
         """
@@ -268,11 +248,9 @@ class PointTier(object):
         """
         self.removePoint(Point(time, mark))
 
-
     def removePoint(self, point):
         self.points.remove(point)
         self._fixBoundaries()
-
 
     def read(self, f):
         """
@@ -293,7 +271,6 @@ class PointTier(object):
             self.points.append(Point(imrk, itim))
         self._fixBoundaries()
 
-
     def write(self, f):
         """
         Write the current state into a Praat-format PointTier/TextTier file. f
@@ -311,7 +288,6 @@ class PointTier(object):
             sink.write('\mark = "%s"\n' % point.mark)
         sink.close()
 
-
     def bounds(self):
         return self.minTime, self.maxTime
 
@@ -327,7 +303,6 @@ class PointTierFromFile(PointTier):
         self.points = []
         self.name = name
         self.read(f)
-        
 
 
 class IntervalTier(object):
@@ -361,61 +336,48 @@ class IntervalTier(object):
         self.intervals = []
         self.name = name
 
-
     def __str__(self):
         return '<IntervalTier %r with %d points>' % (self.name, len(self))
-
 
     def __repr__(self):
         return 'IntervalTier(%r, %r)' % (self.name, self.intervals)
 
-
     def __iter__(self):
         return iter(self.intervals)
-
 
     def __len__(self):
         return len(self.intervals)
 
-
     def __getitem__(self, i):
         return self.intervals[i]
-
 
     def _fixBoundaries(self):
         if self.intervals:
             self.minTime = self.intervals[0].minTime
             self.maxTime = self.intervals[-1].maxTime
 
-
     def __min__(self):
         return self.minTime
-
 
     def __max__(self):
         return self.maxTime
 
-
     def add(self, minTime, maxTime, mark):
         self.addInterval(Interval(minTime, maxTime, mark))
-
 
     def addInterval(self, interval):
         i = bisect_left(self.intervals, interval)
         if i != len(self.intervals) and self.intervals[i] == interval:
-            raise ValueError, '%r already at this span' % self.intervals[i]
+            raise(ValueError, '%r already at this span' % self.intervals[i])
         self.intervals.insert(i, interval)
         self._fixBoundaries()
-
 
     def remove(self, minTime, maxTime, mark):
         self.removeInterval(Interval(minTime, maxTime, mark))
 
-
     def removeInterval(self, interval):
         self.intervals.remove(interval)
         self._fixBoundaries()
-
 
     def intervalContaining(self, time):
         """
@@ -427,7 +389,6 @@ class IntervalTier(object):
         if i != len(self.intervals):
             if self.intervals[i].minTime < time < self.intervals[i].maxTime: 
                 return self.intervals[i]
-
 
     def read(self, f):
         """
@@ -450,7 +411,6 @@ class IntervalTier(object):
         source.close()
         self._fixBoundaries()
 
-
     def write(self, f):
         """
         Write the current state into a Praat-format IntervalTier file. f may be
@@ -468,7 +428,6 @@ class IntervalTier(object):
             sink.write('\txmax = %f\n' % interval.maxTime)
             sink.write('\ttext = "%s"\n' % interval.mark)
         sink.close()
-
 
     def bounds(self):
         return self.minTime, self.maxTime
@@ -521,37 +480,31 @@ class TextGrid(object):
         """
         Construct a TextGrid instance with the given (optional) name (which is
         only relevant for MLF stuff). If file is given, it is a string naming
-        the location of a Praat-format TextGrid file from which to populate this
-        instance.
+        the location of a Praat-format TextGrid file from which to populate 
+        this instance.
         """
         self.minTime = 0.
         self.maxTime = 0.
         self.tiers = []
         self.name = name
 
-
     def __str__(self):
         return '<TextGrid %r with %d Tiers>' % (self.name, len(self))
-
 
     def __repr__(self):
         return 'TextGrid(%r, %r)' % (self.name, self.tiers)
 
-
     def __iter__(self):
         return iter(self.tiers)
 
-
     def __len__(self):
         return len(self.tiers)
-
 
     def __getitem__(self, i):
         """ 
         Return the ith tier
         """
         return self.tiers[i]
-
 
     def getFirst(self, tierName):
         """
@@ -560,7 +513,6 @@ class TextGrid(object):
         for t in self.tiers:
             if t.name == tierName:
                 return t
-
 
     def getList(self, tierName):
         """
@@ -572,37 +524,30 @@ class TextGrid(object):
                 tiers.append(t)
         return tiers
 
-
     def getNames(self):
         """
         return a list of the names of the intervals contained in this TextGrid
         """
         return [tier.name for tier in self.tiers]
 
-
     def _fixBoundaries(self):
         if self.tiers:
             self.minTime = min([tier.minTime for tier in self.tiers])
             self.maxTime = max([tier.maxTime for tier in self.tiers])
 
-
     def __min__(self):
         return self.minTime
 
-
     def __max__(self):
         return self.maxTime
-
 
     def append(self, tier):
         self.tiers.append(tier)
         self._fixBoundaries()
 
-
     def extend(self, tiers):
         self.tiers.extend(tiers)
         self._fixBoundaries()
-
 
     def pop(self, i=None):
         """
@@ -616,12 +561,10 @@ class TextGrid(object):
         self._fixBoundaries()
         return r
 
-
     @staticmethod
     def _getMark(text):
         a = re.search('(\S+) (=) (".*")', text.readline().rstrip())
         return a.groups()[2][1:-1]
-
 
     def read(self, f):
         """ 
@@ -655,12 +598,11 @@ class TextGrid(object):
                 n = int(source.readline().rstrip().split()[3])
                 for j in xrange(n):
                     source.readline().rstrip() # header junk
-                    jtim = float( source.readline().rstrip().split()[2])
+                    jtim = float(source.readline().rstrip().split()[2])
                     jmrk = source.readline().rstrip().split()[2][1:-1]
                     itie.addPoint(Point(jtim, jmrk))
                 self.append(itie)
         source.close()
-
 
     def write(self, f):
         """
@@ -728,29 +670,23 @@ class MLF(object):
         self.grids = []
         self.read(f, samplerate)
 
-
     def __iter__(self):
         return iter(self.grids)
-
 
     def __str__(self):
         return '<MLF with %d TextGrids>' % len(self)
 
-
     def __repr__(self):
         return "MLF(%r)" % self.grids
 
-
     def __len__(self):
         return len(self.grids)
-
 
     def __getitem__(self, i):
         """ 
         Return the ith TextGrid
         """
         return self.grids[i]
-
 
     def read(self, f, samplerate):
         source = f if isinstance(f, file) else open(f, 'r')
@@ -791,7 +727,6 @@ class MLF(object):
             else:
                 source.close()
                 break
-
 
     def write(self, prefix=''):
         """ 
