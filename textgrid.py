@@ -120,6 +120,9 @@ class Interval(object):
     """
 
     def __init__(self, minTime, maxTime, mark):
+        if minTime >= maxTime:
+            raise(ValueError, '%r:%r is a null or negative time span' % \
+                                                           minTime, maxTime)
         self.minTime = minTime
         self.maxTime = maxTime
         self.mark = mark
@@ -198,8 +201,8 @@ class PointTier(object):
     """ 
 
     def __init__(self, name=None):
-        self.minTime = 0.
-        self.maxTime = 0.
+        self.minTime = None
+        self.maxTime = None
         self.points = []
         self.name = name
 
@@ -262,8 +265,8 @@ class PointTier(object):
         source.readline() # header junk 
         source.readline()
         source.readline()
-        source.readline() # min
-        source.readline() # max
+        self.minTime = float(source.readline().split()[2])
+        self.maxTime = float(source.readline().split()[2])
         for i in xrange(int(source.readline().rstrip().split()[3])):
             source.readline().rstrip() # header
             itim = float(source.readline().rstrip().split()[2])
@@ -298,8 +301,6 @@ class PointTierFromFile(PointTier):
     """
 
     def __init__(self, f, name=None):
-        self.minTime = 0.
-        self.maxTime = 0.
         self.points = []
         self.name = name
         self.read(f)
@@ -325,7 +326,7 @@ class IntervalTier(object):
     >>> foo.add(1.0, 3.0, 'baz')
     Traceback (most recent call last):
         ...
-    ValueError: Interval(2.0, 2.5, 'baz') and Interval(1.0, 3.0, 'baz') overlap
+    ValueError
     >>> foo.intervalContaining(2.25)
     Interval(2.0, 2.5, 'baz')
     """
@@ -400,8 +401,8 @@ class IntervalTier(object):
         source.readline() # header junk 
         source.readline()
         source.readline()
-        source.readline() # min
-        source.readline() # max
+        self.minTime = float(source.readline().split()[2])
+        self.maxTime = float(source.readline().split()[2])
         for i in xrange(int(source.readline().rstrip().split()[3])):
             source.readline().rstrip() # header
             imin = float(source.readline().rstrip().split()[2]) 
@@ -572,8 +573,12 @@ class TextGrid(object):
         file object to read from, or a string naming the path for reading
         """
         source = f if isinstance(f, file) else open(f, 'r')
-        for i in xrange(6):
-            source.readline() # header junk
+        source.readline() # header junk
+        source.readline() # header junk
+        source.readline() # header junk
+        self.minTime = float(source.readline().split()[2])
+        self.maxTime = float(source.readline().split()[2])
+        source.readline() # more header junk
         m = int(source.readline().rstrip().split()[2]) # will be self.n soon
         source.readline()
         for i in xrange(m): # loop over grids
@@ -707,7 +712,11 @@ class MLF(object):
                     if len(line) == 4: # word on this baby
                         pmin = round(float(line[0]) / samplerate, 5)
                         pmax = round(float(line[1]) / samplerate, 5)
-                        phon.add(pmin, pmax, line[2])
+                        # interval may be null duration...
+                        try: 
+                            phon.add(pmin, pmax, line[2])
+                        except ValueError:
+                            pass
                         if wmrk:
                             word.add(wsrt, wend, wmrk)
                         wmrk = line[3]
@@ -716,7 +725,8 @@ class MLF(object):
                     elif len(line) == 3: # just phone
                         pmin = round(float(line[0]) / samplerate, 5)
                         pmax = round(float(line[1]) / samplerate, 5)
-                        phon.add(pmin, pmax, line[2])
+                        if pmin != pmax:
+                            phon.add(pmin, pmax, line[2])
                         wend = pmax
                     else: # it's a period
                         word.add(wsrt, wend, wmrk)
