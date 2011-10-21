@@ -41,9 +41,22 @@ the directory 'your_output_dir/'.
 """
 
 import re
+import codecs
 import os.path
 
 from bisect import bisect_left
+
+
+def readFile(f):
+    """
+    This helper method returns an appropriate file handle given a path f.
+    If f points to a UTF-16 file, this is done with codecs.open, otherwise it 
+    is treated as ASCII.
+    """
+    if open(f, 'r').read(2) in ('\xFE\xFF', '\xFF\xFE'):
+        return codecs.open(f, 'r', encoding='UTF16')
+    else:
+        return open(f, 'r')
 
 
 class Point(object):
@@ -257,11 +270,11 @@ class PointTier(object):
 
     def read(self, f):
         """
-        Read the Points contained in the Praat-formated PointTier/TextTier file 
-        and append those tiers. f may be a file object to read from, or a 
-        string naming a path for reading
+        Read the Points contained in the Praat-formated PointTier/TextTier file
+        indicated by string f
         """
-        source = f if isinstance(f, file) else open(f, 'r')
+        # read BOM, if it's there
+        source = readFile(f)
         source.readline() # header junk 
         source.readline()
         source.readline()
@@ -393,11 +406,10 @@ class IntervalTier(object):
 
     def read(self, f):
         """
-        Read the tiers contained in the Praat-format IntervalTier file named by
-        the given string, and append those tiers to self. f may be a file
-        object to read from, or a string naming the path to open for reading
+        Read the Intervals contained in the Praat-formated IntervalTier file
+        indicated by string f
         """
-        source = f if isinstance(f, file) else open(f, 'r')
+        source = readFile(f)
         source.readline() # header junk 
         source.readline()
         source.readline()
@@ -568,11 +580,11 @@ class TextGrid(object):
         return a.groups()[2][1:-1]
 
     def read(self, f):
-        """ 
-        Read the tiers contained in a Praat-format TextGrid file. f may be a
-        file object to read from, or a string naming the path for reading
         """
-        source = f if isinstance(f, file) else open(f, 'r')
+        Read the tiers contained in the Praat-formated TextGrid file indicated 
+        by string f
+        """
+        source = readFile(f)
         source.readline() # header junk
         source.readline() # header junk
         source.readline() # header junk
@@ -694,7 +706,7 @@ class MLF(object):
         return self.grids[i]
 
     def read(self, f, samplerate):
-        source = f if isinstance(f, file) else open(f, 'r')
+        source = open(f, 'r') # HTK only generates ASCII
         samplerate = float(samplerate)
         source.readline() # header
         while 1: # loop over text

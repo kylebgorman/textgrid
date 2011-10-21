@@ -1,4 +1,5 @@
-7/2/11 (KG):
+10/16/11 (KG, MS):
 
+* fix for implicit intervals at write() time
 * consider the merits of using regexps, or some equivalent of fscanf, instead 
   of split() for parsing text files in the write methods.
