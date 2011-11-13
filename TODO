@@ -1,5 +1,6 @@
 10/16/11 (KG, MS):
 
-* fix for implicit intervals at write() time
-* consider the merits of using regexps, or some equivalent of fscanf, instead 
-  of split() for parsing text files in the write methods.
+#: UTF-8 and UTF-16 reading
+#: UTF-8 and UTF-16 writing
+#: read into the gaps
+#: write into the gaps

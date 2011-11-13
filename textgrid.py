@@ -27,6 +27,11 @@
 # Kyle Gorman <kgorman@ling.upenn.edu>
 # Morgan Sonderegger <morgan@cs.uchicago.edu>
 
+# TODO: UTF-8 and UTF-16 reading
+# TODO: UTF-8 and UTF-16 writing
+# TODO: read into the gaps
+# TODO: write into the gaps
+
 """
 This module is designed for manipulation of Praat TextGrid, PointTier, and
 IntervalTier files in Python. A class interface is also provided for the .mlf
@@ -44,6 +49,7 @@ import re
 import codecs
 import os.path
 
+from sys import stderr
 from bisect import bisect_left
 
 
@@ -133,9 +139,9 @@ class Interval(object):
     """
 
     def __init__(self, minTime, maxTime, mark):
-        if minTime >= maxTime:
-            raise(ValueError, '%r:%r is a null or negative time span' % \
-                                                           minTime, maxTime)
+        if minTime > maxTime:
+            stderr.write('%r:%r is negative span\n' % (minTime, maxTime))
+            raise(ValueError)
         self.minTime = minTime
         self.maxTime = maxTime
         self.mark = mark
@@ -152,6 +158,7 @@ class Interval(object):
     def __cmp__(self, other):
         if isinstance(other, Interval):
             if self.overlaps(other):
+                print self, other
                 raise(ValueError, '%r and %r overlap' % (self, other))
             # given that the two intervals do not overlap:
             return cmp(self.minTime, other.minTime)
@@ -393,16 +400,25 @@ class IntervalTier(object):
         self.intervals.remove(interval)
         self._fixBoundaries()
 
+    def indexContaining(self, time):
+        """
+        Returns the index of the interval containing the given time point, or 
+        None if the time point is outside the bounds of this tier. The argument
+        can be a numeric type, or a Point object.
+        """
+        i = bisect_left(self.intervals, time) 
+        if i != len(self.intervals):
+            if self.intervals[i].minTime <= time <= self.intervals[i].maxTime:
+                return i
+
     def intervalContaining(self, time):
         """
         Returns the interval containing the given time point, or None if the
         time point is outside the bounds of this tier. The argument can be a
         numeric type, or a Point object.
         """
-        i = bisect_left(self.intervals, time) 
-        if i != len(self.intervals):
-            if self.intervals[i].minTime < time < self.intervals[i].maxTime: 
-                return self.intervals[i]
+        i = self.indexContaining(time)
+        if i: return self.intervals[i]
 
     def read(self, f):
         """
@@ -588,8 +604,8 @@ class TextGrid(object):
         source.readline() # header junk
         source.readline() # header junk
         source.readline() # header junk
-        self.minTime = float(source.readline().split()[2])
-        self.maxTime = float(source.readline().split()[2])
+        self.minTime = round(float(source.readline().split()[2]), 5)
+        self.maxTime = round(float(source.readline().split()[2]), 5)
         source.readline() # more header junk
         m = int(source.readline().rstrip().split()[2]) # will be self.n soon
         source.readline()
@@ -597,25 +613,29 @@ class TextGrid(object):
             source.readline()
             if source.readline().rstrip().split()[2] == '"IntervalTier"': 
                 inam = source.readline().rstrip().split(' = ')[1].strip('"')
-                imin = float(source.readline().rstrip().split()[2])
-                imax = float(source.readline().rstrip().split()[2])
+                imin = round(float(source.readline().rstrip().split()[2]), 5)
+                imax = round(float(source.readline().rstrip().split()[2]), 5)
                 itie = IntervalTier(inam)
                 for j in xrange(int(source.readline().rstrip().split()[3])):
                     source.readline().rstrip().split() # header junk
-                    jmin = float(source.readline().rstrip().split()[2])
-                    jmax = float(source.readline().rstrip().split()[2])
+                    jmin = round(float(source.readline().rstrip().split()[2]),
+                                                                           5)
+                    jmax = round(float(source.readline().rstrip().split()[2]),
+                                                                           5)
                     jmrk = self._getMark(source)
-                    itie.addInterval(Interval(jmin, jmax, jmrk))
-                self.append(itie) 
+                    if jmin < jmax:
+                        itie.addInterval(Interval(jmin, jmax, jmrk))
+                self.append(itie)
             else: # pointTier
                 inam = source.readline().rstrip().split(' = ')[1].strip('"')
-                imin = float(source.readline().rstrip().split()[2])
-                imax = float(source.readline().rstrip().split()[2])
+                imin = round(float(source.readline().rstrip().split()[2]), 5)
+                imax = round(float(source.readline().rstrip().split()[2]), 5)
                 itie = PointTier(inam)
                 n = int(source.readline().rstrip().split()[3])
                 for j in xrange(n):
                     source.readline().rstrip() # header junk
-                    jtim = float(source.readline().rstrip().split()[2])
+                    jtim = round(float(source.readline().rstrip().split()[2]),
+                                                                           5)
                     jmrk = source.readline().rstrip().split()[2][1:-1]
                     itie.addPoint(Point(jtim, jmrk))
                 self.append(itie)
