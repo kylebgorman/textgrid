@@ -29,8 +29,6 @@
 
 # TODO: UTF-8 and UTF-16 reading
 # TODO: UTF-8 and UTF-16 writing
-# TODO: read into the gaps
-# TODO: write into the gaps
 
 """
 This module is designed for manipulation of Praat TextGrid, PointTier, and
@@ -139,9 +137,8 @@ class Interval(object):
     """
 
     def __init__(self, minTime, maxTime, mark):
-        if minTime > maxTime:
-            stderr.write('%r:%r is negative span\n' % (minTime, maxTime))
-            raise(ValueError)
+        if minTime > maxTime: # not an actual interval
+            raise ValueError(minTime - maxTime)
         self.minTime = minTime
         self.maxTime = maxTime
         self.mark = mark
@@ -157,10 +154,10 @@ class Interval(object):
 
     def __cmp__(self, other):
         if isinstance(other, Interval):
-            if self.overlaps(other):
-                print self, other
-                raise(ValueError, '%r and %r overlap' % (self, other))
-            # given that the two intervals do not overlap:
+            if self.overlaps(other): 
+                raise ValueError((self, other))
+                # this returns the two intervals, so the user can patch things
+                # up if s/he so chooses
             return cmp(self.minTime, other.minTime)
         elif isinstance(other, Point):
             return cmp(self.minTime, other.time) + \
@@ -200,7 +197,7 @@ class Interval(object):
             return self.minTime <= other <= self.maxTime
 
     def bounds(self):
-        return (self.minTime, self.maxTime)
+        return (self.minTime, self.maxTime or self.points[-1].maxTime)
 
 
 class PointTier(object):
@@ -220,11 +217,11 @@ class PointTier(object):
     PointTier('foo', [Point(2.0, 'baz'), Point(6.0, 'bar')])
     """ 
 
-    def __init__(self, name=None):
-        self.minTime = None
-        self.maxTime = None
-        self.points = []
+    def __init__(self, name=None, minTime=0., maxTime=None):
         self.name = name
+        self.minTime = minTime
+        self.maxTime = maxTime
+        self.points = []
 
     def __str__(self):
         return '<PointTier %r with %d points>' % (self.name, len(self))
@@ -241,11 +238,6 @@ class PointTier(object):
     def __getitem__(self, i):
         return self.points[i]
 
-    def _fixBoundaries(self):
-        if self.points:
-            self.minTime = self.points[0].time
-            self.maxTime = self.points[-1].time
-
     def __min__(self):
         return self.minTime
 
@@ -259,11 +251,14 @@ class PointTier(object):
         self.addPoint(Point(time, mark))
 
     def addPoint(self, point):
+        if point < self.minTime: 
+            raise ValueError, self.minTime # too early
+        if self.maxTime and point > self.maxTime: 
+            raise ValueError, self.maxTime # too late
         i = bisect_left(self.points, point)
-        if i != len(self.points) and self.points[i] == point:
-            raise(ValueError, '%r already at this time' % self.points[i])
+        if i < len(self.points) and self.points[i].time == point.time: 
+            raise ValueError, point # we already got one right there
         self.points.insert(i, point)
-        self._fixBoundaries()
 
     def remove(self, time, mark):
         """
@@ -273,7 +268,6 @@ class PointTier(object):
 
     def removePoint(self, point):
         self.points.remove(point)
-        self._fixBoundaries()
 
     def read(self, f):
         """
@@ -292,7 +286,6 @@ class PointTier(object):
             itim = float(source.readline().rstrip().split()[2])
             imrk = source.readline().rstrip().split()[2].replace('"', '') 
             self.points.append(Point(imrk, itim))
-        self._fixBoundaries()
 
     def write(self, f):
         """
@@ -312,7 +305,7 @@ class PointTier(object):
         sink.close()
 
     def bounds(self):
-        return self.minTime, self.maxTime
+        return (self.minTime, self.maxTime or self.intervals[-1].maxTime)
 
 
 class PointTierFromFile(PointTier):
@@ -346,19 +339,33 @@ class IntervalTier(object):
     >>> foo.add(1.0, 3.0, 'baz')
     Traceback (most recent call last):
         ...
-    ValueError
+    ValueError: (Interval(2.0, 2.5, 'baz'), Interval(1.0, 3.0, 'baz'))
     >>> foo.intervalContaining(2.25)
     Interval(2.0, 2.5, 'baz')
+    >>> foo = IntervalTier('foo', maxTime=3.5)
+    >>> foo.add(2.7, 3.7, 'bar')
+    Traceback (most recent call last):
+        ...
+    ValueError: 3.5
+    >>> foo.add(1.3, 2.4, 'bar')
+    >>> foo.add(2.7, 3.3, 'baz')
+    >>> temp = foo._fillInTheGaps('') # not for users, but a good quick test
+    >>> temp[0]
+    Interval(0.0, 1.3, '')
+    >>> temp[-1]
+    Interval(3.3, 3.5, '')
+    >>> temp[2]
+    Interval(2.4, 2.7, '')
     """
 
-    def __init__(self, name=None):
-        self.minTime = 0.
-        self.maxTime = 0.
-        self.intervals = []
+    def __init__(self, name=None, minTime=0., maxTime=None):
         self.name = name
+        self.minTime = minTime
+        self.maxTime = maxTime
+        self.intervals = []
 
     def __str__(self):
-        return '<IntervalTier %r with %d points>' % (self.name, len(self))
+        return '<IntervalTier %r with %d intervals>' % (self.name, len(self))
 
     def __repr__(self):
         return 'IntervalTier(%r, %r)' % (self.name, self.intervals)
@@ -372,11 +379,6 @@ class IntervalTier(object):
     def __getitem__(self, i):
         return self.intervals[i]
 
-    def _fixBoundaries(self):
-        if self.intervals:
-            self.minTime = self.intervals[0].minTime
-            self.maxTime = self.intervals[-1].maxTime
-
     def __min__(self):
         return self.minTime
 
@@ -387,18 +389,21 @@ class IntervalTier(object):
         self.addInterval(Interval(minTime, maxTime, mark))
 
     def addInterval(self, interval):
+        if interval.minTime < self.minTime: # too early
+            raise ValueError(self.minTime)
+        if self.maxTime and interval.maxTime > self.maxTime: # too late
+            #raise ValueError, self.maxTime
+            raise ValueError(self.maxTime)
         i = bisect_left(self.intervals, interval)
         if i != len(self.intervals) and self.intervals[i] == interval:
-            raise(ValueError, '%r already at this span' % self.intervals[i])
+            raise ValueError(self.intervals[i])
         self.intervals.insert(i, interval)
-        self._fixBoundaries()
 
     def remove(self, minTime, maxTime, mark):
         self.removeInterval(Interval(minTime, maxTime, mark))
 
     def removeInterval(self, interval):
         self.intervals.remove(interval)
-        self._fixBoundaries()
 
     def indexContaining(self, time):
         """
@@ -418,7 +423,8 @@ class IntervalTier(object):
         numeric type, or a Point object.
         """
         i = self.indexContaining(time)
-        if i: return self.intervals[i]
+        if i: 
+            return self.intervals[i]
 
     def read(self, f):
         """
@@ -438,9 +444,24 @@ class IntervalTier(object):
             imrk = source.readline().rstrip().split()[2].replace('"', '') # txt
             self.intervals.append(Interval(imin, imax, imrk))
         source.close()
-        self._fixBoundaries()
 
-    def write(self, f):
+    def _fillInTheGaps(self, null):
+        """
+        Returns a pseudo-IntervalTier with the temporal gaps filled in
+        """
+        prev_t = self.minTime
+        output = []
+        for interval in self.intervals:
+            if prev_t < interval.minTime:
+                output.append(Interval(prev_t, interval.minTime, null))
+            output.append(interval)
+            prev_t = interval.maxTime
+        # last interval
+        if prev_t < self.maxTime: # also false if maxTime isn't defined
+            output.append(Interval(prev_t, self.maxTime, null))
+        return output
+
+    def write(self, f, null=''):
         """
         Write the current state into a Praat-format IntervalTier file. f may be
         a file object to write to, or a string naming a path for writing
@@ -449,17 +470,21 @@ class IntervalTier(object):
         sink.write('File type = "ooTextFile"\n')
         sink.write('Object class = "IntervalTier"\n\n')
         sink.write('xmin = %f\n' % self.minTime)
-        sink.write('xmax = %f\n' % self.maxTime)
-        sink.write('intervals: size = %d\n' % len(self))
-        for (i, interval) in enumerate(self.intervals):
-            sink.write('intervals [%d]:\n' % (i + 1))
+        sink.write('xmax = %f\n' % (self.maxTime if self.maxTime else 
+                                    self.intervals[-1].maxTime))
+        # compute the number of intervals and make the empty ones
+        output = self._fillInTheGaps(null)
+        # write it all out
+        sink.write('intervals: size = %d\n' % len(output))
+        for (i, interval) in enumerate(output, 1):
+            sink.write('intervals [%d]:\n' % i)
             sink.write('\txmin = %f\n' % interval.minTime)
             sink.write('\txmax = %f\n' % interval.maxTime)
             sink.write('\ttext = "%s"\n' % interval.mark)
         sink.close()
 
     def bounds(self):
-        return self.minTime, self.maxTime
+        return self.minTime, self.maxTime or interval[-1].maxTime
 
 
 class IntervalTierFromFile(IntervalTier):
@@ -495,8 +520,7 @@ class TextGrid(object):
     >>> foo.append(bar) # now there are two copies of bar in the TextGrid
     >>> foo.minTime
     0.0
-    >>> foo.maxTime
-    3.5
+    >>> foo.maxTime # nothing
     >>> foo.getFirst('bar')
     PointTier('bar', [Point(1.0, 'spam'), Point(2.75, 'eggs')])
     >>> foo.getList('bar')[1]
@@ -505,17 +529,17 @@ class TextGrid(object):
     ['bar', 'baz', 'bar']
     """
 
-    def __init__(self, name=None):
+    def __init__(self, name=None, minTime=0., maxTime=None):
         """
         Construct a TextGrid instance with the given (optional) name (which is
         only relevant for MLF stuff). If file is given, it is a string naming
         the location of a Praat-format TextGrid file from which to populate 
         this instance.
         """
-        self.minTime = 0.
-        self.maxTime = 0.
-        self.tiers = []
         self.name = name
+        self.minTime = minTime
+        self.maxTime = maxTime
+        self.tiers = []
 
     def __str__(self):
         return '<TextGrid %r with %d Tiers>' % (self.name, len(self))
@@ -559,11 +583,6 @@ class TextGrid(object):
         """
         return [tier.name for tier in self.tiers]
 
-    def _fixBoundaries(self):
-        if self.tiers:
-            self.minTime = min([tier.minTime for tier in self.tiers])
-            self.maxTime = max([tier.maxTime for tier in self.tiers])
-
     def __min__(self):
         return self.minTime
 
@@ -571,29 +590,30 @@ class TextGrid(object):
         return self.maxTime
 
     def append(self, tier):
+        if tier.minTime < self.minTime: 
+            raise ValueError(self.minTime) # too early
+        if self.maxTime and tier.maxTime > self.maxTime: 
+            raise ValueError(self.maxTime) # too late
         self.tiers.append(tier)
-        self._fixBoundaries()
 
     def extend(self, tiers):
+        if min([t.minTime for t in tiers]) < self.minTime:
+            raise ValueError(self.minTime) # too early
+        if self.maxTime and max([t.minTime for t in tiers]) > self.maxTime:
+            raise ValueError(self.maxTime) # too late
         self.tiers.extend(tiers)
-        self._fixBoundaries()
 
     def pop(self, i=None):
         """
-        Remove and return tier at index i (default last). Raise IndexError if
-        TextGrid is empty or index is out of range.
+        Remove and return tier at index i (default last). Will raise IndexError
+        if TextGrid is empty or index is out of range.
         """
-        if i:
-            r = self.tiers.pop(i)
-        else:
-            r = self.tiers.pop()
-        self._fixBoundaries()
-        return r
+        return (self.tiers.pop(i) if i else self.tiers.pop())
 
     @staticmethod
     def _getMark(text):
-        a = re.search('(\S+) (=) (".*")', text.readline().rstrip())
-        return a.groups()[2][1:-1]
+        a = re.search('(\S+) (=) (".*")', text.readline().rstrip()).groups()
+        return a[2][1:-1]
 
     def read(self, f):
         """
@@ -623,7 +643,7 @@ class TextGrid(object):
                     jmax = round(float(source.readline().rstrip().split()[2]),
                                                                            5)
                     jmrk = self._getMark(source)
-                    if jmin < jmax:
+                    if jmin < jmax: # non-null
                         itie.addInterval(Interval(jmin, jmax, jmrk))
                 self.append(itie)
             else: # pointTier
@@ -641,7 +661,13 @@ class TextGrid(object):
                 self.append(itie)
         source.close()
 
-    def write(self, f):
+    def _maxTime(self):
+        """
+        Compute the maximum time of each tier in a TextGrid
+        """
+        return [t.maxTime if t.maxTime else t[-1].maxtime]
+
+    def write(self, f, null=''):
         """
         Write the current state into a Praat-format TextGrid file. f may be a
         file object to write to, or a string naming a path to open for writing.
@@ -650,31 +676,34 @@ class TextGrid(object):
         sink.write('File type = "ooTextFile"\n')
         sink.write('Object class = "TextGrid"\n\n')
         sink.write('xmin = %f\n' % self.minTime)
-        sink.write('xmax = %f\n' % self.maxTime)
+        maxT = [t.maxTime if t.maxTime else t[-1].maxTime for t in self.tiers]
+        sink.write('xmax = %f\n' % max(maxT))
         sink.write('tiers? <exists>\n')
         sink.write('size = %d\n' % len(self))
         sink.write('item []:\n')
-        for (i, tier) in enumerate(self.tiers):
-            sink.write('\titem [%d]:\n' % (i + 1))
+        for (i, (tier, mT)) in enumerate(zip(self.tiers, maxT), 1):
+            sink.write('\titem [%d]:\n' % i)
             if tier.__class__ == IntervalTier: 
                 sink.write('\t\tclass = "IntervalTier"\n')
                 sink.write('\t\tname = "%s"\n' % tier.name)
                 sink.write('\t\txmin = %f\n' % tier.minTime)
-                sink.write('\t\txmax = %f\n' % tier.maxTime)
-                sink.write('\t\tintervals: size = %d\n' % len(tier))
-                for (j, interval) in enumerate(tier):
-                    sink.write('\t\t\tintervals [%d]:\n' % (j + 1))
+                sink.write('\t\txmax = %f\n' % mT)
+                # compute the number of intervals and make the empty ones
+                output = tier._fillInTheGaps(null)
+                sink.write('\t\tintervals: size = %d\n' % len(output))
+                for (j, interval) in enumerate(output, 1):
+                    sink.write('\t\t\tintervals [%d]:\n' % j)
                     sink.write('\t\t\t\txmin = %f\n' % interval.minTime)
                     sink.write('\t\t\t\txmax = %f\n' % interval.maxTime)
                     sink.write('\t\t\t\ttext = "%s"\n' % interval.mark)
-            else: # PointTier
+            elif tier.__class__ == PointTier: # PointTier
                 sink.write('\t\tclass = "TextTier"\n')
                 sink.write('\t\tname = "%s"\n' % tier.name)
                 sink.write('\t\txmin = %f\n' % min(tier))
                 sink.write('\t\txmax = %f\n' % max(tier))
                 sink.write('\t\tpoints: size = %d\n' % len(tier))
-                for (k, point) in enumerate(tier):
-                    sink.write('\t\t\tpoints [%d]:\n' % k + 1)
+                for (k, point) in enumerate(tier, 1):
+                    sink.write('\t\t\tpoints [%d]:\n' % k)
                     sink.write('\t\t\t\ttime = %f\n' % point.time)
                     sink.write('\t\t\t\tmark = "%s"\n' % point.mark)
         sink.close()
@@ -744,11 +773,9 @@ class MLF(object):
                     if len(line) == 4: # word on this baby
                         pmin = round(float(line[0]) / samplerate, 5)
                         pmax = round(float(line[1]) / samplerate, 5)
-                        # interval may be null duration...
-                        try: 
-                            phon.add(pmin, pmax, line[2])
-                        except ValueError:
-                            pass
+                        if pmin == pmax:
+                            raise ValueError(0.) # null duration interval
+                        phon.add(pmin, pmax, line[2])
                         if wmrk:
                             word.add(wsrt, wend, wmrk)
                         wmrk = line[3]
