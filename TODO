@@ -1,4 +1,5 @@
 11/16/11 (KG, MS):
 
-#: UTF-8 and UTF-16 reading
-#: UTF-8 and UTF-16 writing
+UTF-8 and UTF-16 reading
+UTF-8 and UTF-16 writing
+MLF.read should treat non-null small pauses as words (probably)
