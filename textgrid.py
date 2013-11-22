@@ -155,7 +155,7 @@ class Interval(object):
                 # this returns the two intervals, so the user can patch things
                 # up if s/he so chooses
             return cmp(self.minTime, other.minTime)
-        elif hasattr(other, 'time'):
+        elif hasattr(other, 'time'): # happens when comparing Intervals and Points
             return cmp(self.minTime, other.time) + \
                    cmp(self.maxTime, other.time)
         else: 
