@@ -6,7 +6,7 @@
 # Kyle Gorman <kgorman@ling.upenn.edu>
 # Morgan Sonderegger <morgan@cs.uchicago.edu>
 #
-# tests for the read-write functions in textgrid.py (they don't make much 
+# Tests for the read-write functions in textgrid.py (they don't make much 
 # sense as doctests). not particularly useful for users...
 
 if __name__ == '__main__':
@@ -14,7 +14,7 @@ if __name__ == '__main__':
     from os import remove
     
     ## print
-    print 'if this works, you should see "True" twice below...'
+    print 'TEST: if this works, you will see "True" twice below...'
 
     ## MLF
     # write MLF file
@@ -154,3 +154,22 @@ if __name__ == '__main__':
     remove('foo_copy.TextGrid')
     remove('bar.TextGrid')
     remove('phones.IntervalTier')
+
+    ## check multiline text field handling
+    class FakeFile(object):
+        def __init__(self, string):
+            self.lines = string.splitlines(True)
+            # this preserves final newline char
+        def readline(self):
+            return self.lines.pop(0)
+
+    print 
+
+    print 'TEST: if this works, you will see a three-line sentence below...'
+    some_text = """            text = "This is an annoying, but
+not technically ill-formed
+line."
+This latter line shouldn't be pulled in at all.
+"""
+    ff = FakeFile(some_text)
+    print textgrid.TextGrid._getMark(ff)

@@ -622,8 +622,20 @@ class TextGrid(object):
 
     @staticmethod
     def _getMark(text):
-        a = re.search(r'(\S+)\s(=)\s(".*")', text.readline()).groups()
-        return a[2][1:-1]
+        """
+        Get the "mark" text on a line. Since Praat doesn't prevent you 
+        from using your platform's newline character in "text" fields, we
+        read until we find a match. Regression tests are in `RWtests.py`.
+        """
+        m = None
+        my_line = ''
+        while True:
+            my_line += text.readline()
+            m = re.search(r'(\S+)\s(=)\s(".*")', my_line, 
+                          re.DOTALL)
+            if m != None:
+                break
+        return m.groups()[2][1:-1]
 
     def read(self, f):
         """
