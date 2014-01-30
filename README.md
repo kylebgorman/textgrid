@@ -23,7 +23,7 @@ How to install:
 The code can be placed in your working directory or in your `$PYTHONPATH` and 
 then imported in your Python script.
 
-Synposis:
+Synopsis:
 ---------
 
 See the docstrings in `textgrid.py`

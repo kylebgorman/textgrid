@@ -204,7 +204,7 @@ class Interval(object):
             return self.minTime <= other <= self.maxTime
 
     def bounds(self):
-        return (self.minTime, self.maxTime or self.points[-1].maxTime)
+        return (self.minTime, self.maxTime)
 
 
 class PointTier(object):
@@ -313,7 +313,7 @@ class PointTier(object):
         sink.close()
 
     def bounds(self):
-        return (self.minTime, self.maxTime or self.intervals[-1].maxTime)
+        return (self.minTime, self.maxTime or self.points[-1].time)
 
 
 class PointTierFromFile(PointTier):
