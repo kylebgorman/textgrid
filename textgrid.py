@@ -663,6 +663,7 @@ class TextGrid(object):
                     jmin = round(float(source.readline().rstrip().split()[2]), 5)
                     jmax = round(float(source.readline().rstrip().split()[2]), 5)
                     jmrk = self._getMark(source)
+                    print jmin, jmax, jmrk
                     if jmin < jmax: # non-null
                         itie.addInterval(Interval(jmin, jmax, jmrk))
                 self.append(itie)
