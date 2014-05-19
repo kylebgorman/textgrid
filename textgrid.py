@@ -151,10 +151,10 @@ class Interval(object):
         if hasattr(other, 'minTime') and hasattr(other, 'maxTime'):
             if self.overlaps(other): 
                 raise ValueError(self, other)
-                # this returns the two intervals, so the user can patch things
+                # this returns the two intervals, so user can patch things
                 # up if s/he so chooses
             return cmp(self.minTime, other.minTime)
-        elif hasattr(other, 'time'): # happens when comparing Intervals and Points
+        elif hasattr(other, 'time'): # comparing Intervals and Points
             return cmp(self.minTime, other.time) + \
                    cmp(self.maxTime, other.time)
         else: 
@@ -314,17 +314,14 @@ class PointTier(object):
 
     def bounds(self):
         return (self.minTime, self.maxTime or self.points[-1].time)
+    
+    # alternative constructor
 
-
-class PointTierFromFile(PointTier):
-    """
-    The same as a PointTier, but initialized from a text file
-    """
-
-    def __init__(self, f, name=None):
-        self.points = []
-        self.name = name
-        self.read(f)
+    @classmethod
+    def fromFile(cls, f, name=None):
+        pt = cls(name=name)
+        pt.read(f)
+        return pt
 
 
 class IntervalTier(object):
@@ -497,18 +494,14 @@ class IntervalTier(object):
     def bounds(self):
         return self.minTime, self.maxTime or self.intervals[-1].maxTime
 
+    # alternative constructor
 
-class IntervalTierFromFile(IntervalTier):
-    """
-    The same as a IntervalTier, but initialized from a text file
-    """
-
-    def __init__(self, f, name=None):
-        self.minTime = 0.
-        self.maxTime = 0.
-        self.intervals = []
-        self.name = name
-        self.read(f)
+    @classmethod
+    def fromFile(cls, f, name=None):
+        it = cls(name=name)
+        it.intervals = []
+        it.read(f)
+        return it
 
 
 class TextGrid(object):
@@ -663,7 +656,6 @@ class TextGrid(object):
                     jmin = round(float(source.readline().rstrip().split()[2]), 5)
                     jmax = round(float(source.readline().rstrip().split()[2]), 5)
                     jmrk = self._getMark(source)
-                    print jmin, jmax, jmrk
                     if jmin < jmax: # non-null
                         itie.addInterval(Interval(jmin, jmax, jmrk))
                 self.append(itie)
@@ -733,18 +725,13 @@ class TextGrid(object):
                                                            point.mark)
         sink.close()
 
+    # alternative constructor
 
-class TextGridFromFile(TextGrid):
-    """
-    The same as a TextGrid, but initialized from a text file
-    """
-
-    def __init__(self, f, name=None):
-        self.minTime = 0.
-        self.maxTime = 0.
-        self.tiers = []
-        self.name = name
-        self.read(f)
+    @classmethod
+    def fromFile(cls, f, name=None):
+        tg = cls(name=name)
+        tg.read(f)
+        return tg
 
 
 class MLF(object):

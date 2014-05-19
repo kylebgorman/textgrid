@@ -133,11 +133,11 @@ if __name__ == '__main__':
 
     ## TextGrid
     # read foo.TextGrid
-    foo = textgrid.TextGridFromFile('foo.TextGrid')
+    foo = textgrid.TextGrid.fromFile('foo.TextGrid')
     # write it out
     foo.write('foo_copy.TextGrid')
     # read it back in
-    foo_copy = textgrid.TextGridFromFile('foo_copy.TextGrid')
+    foo_copy = textgrid.TextGrid.fromFile('foo_copy.TextGrid')
     print repr(foo) == repr(foo_copy)
     
     ## IntervalTier
@@ -145,7 +145,7 @@ if __name__ == '__main__':
     # write it out
     phones.write('phones.IntervalTier')
     # read it back in
-    phones_copy = textgrid.IntervalTierFromFile('phones.IntervalTier', u'phones')
+    phones_copy = textgrid.IntervalTier.fromFile('phones.IntervalTier', u'phones')
     print repr(phones) == repr(phones_copy)
 
     ## clean up the mess we've made
