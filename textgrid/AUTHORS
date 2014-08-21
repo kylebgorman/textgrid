@@ -1,0 +1,5 @@
+Max Bane <bane@uchicago.edu>, University of Chicago
+Kyle Gorman <kgorman@ling.upenn.edu>, University of Pennsylvania
+Morgan Sonderegger <morgan@cs.uchicago.edu>
+
+KG designed this for personal use in 2007, circulated it in 2008, and turned the original methods into Python classes in 2009. MS and MB began fixing bugs and contributing functions for particular use cases in 2011. 
