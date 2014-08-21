@@ -19,7 +19,11 @@ While you don't have to, if you want to cite textgrid.py in a publication, inclu
 How to install:
 ---------------
 
-The code can be placed in your working directory or in your `$PYTHONPATH` and then imported in your Python script.
+The code can be placed in your working directory or in your `$PYTHONPATH`,  and then imported in your Python script. You also can install it via `pip`, like so:
+
+    pip install git+http://github.com/kylebgorman/textgrid.git
+    
+(if you're not working in a virtualenv, you may need to do this with `sudo`.)
 
 Synopsis:
 ---------
