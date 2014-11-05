@@ -1,20 +1,25 @@
 #!/usr/bin/env python
-# 
+#
 # RWtests.py
-# 
+#
 # Max Bane <bane@uchicago.edu>
 # Kyle Gorman <kgorman@ling.upenn.edu>
 # Morgan Sonderegger <morgan@cs.uchicago.edu>
 #
-# Tests for the read-write functions in textgrid.py (they don't make much 
+# Tests for the read-write functions in textgrid.py (they don't make much
 # sense as doctests). not particularly useful for users...
 
 if __name__ == '__main__':
+    import sys
+    import os
+    base = os.path.dirname(os.path.realpath(__file__))
+    print(base)
+    sys.path.append(base)
     import textgrid
     from os import remove
-    
+
     ## print
-    print 'TEST: if this works, you will see "True" twice below...'
+    print('TEST: if this works, you will see "True" twice below...')
 
     ## MLF
     # write MLF file
@@ -79,7 +84,7 @@ if __name__ == '__main__':
 "bar.lab"
 0 5000000 sil sil
 5000000 7000000 F FIND
-7000000 13000000 AY 
+7000000 13000000 AY
 13000000 16000000 N
 16000000 18000000 D
 18000000 18000000 sp
@@ -138,15 +143,15 @@ if __name__ == '__main__':
     foo.write('foo_copy.TextGrid')
     # read it back in
     foo_copy = textgrid.TextGrid.fromFile('foo_copy.TextGrid')
-    print repr(foo) == repr(foo_copy)
-    
+    print(repr(foo) == repr(foo_copy))
+
     ## IntervalTier
     phones = foo[0]
     # write it out
     phones.write('phones.IntervalTier')
     # read it back in
-    phones_copy = textgrid.IntervalTier.fromFile('phones.IntervalTier', u'phones')
-    print repr(phones) == repr(phones_copy)
+    phones_copy = textgrid.IntervalTier.fromFile('phones.IntervalTier', 'phones')
+    print(repr(phones) == repr(phones_copy))
 
     ## clean up the mess we've made
     remove('baz.mlf')
@@ -163,13 +168,11 @@ if __name__ == '__main__':
         def readline(self):
             return self.lines.pop(0)
 
-    print 
-
-    print 'TEST: if this works, you will see a three-line sentence below...'
+    print('TEST: if this works, you will see a three-line sentence below...')
     some_text = """            text = "This is an annoying, but
 not technically ill-formed
 line."
 This latter line shouldn't be pulled in at all.
 """
     ff = FakeFile(some_text)
-    print textgrid.TextGrid._getMark(ff)
+    print(textgrid.TextGrid._getMark(ff))
