@@ -114,13 +114,19 @@ class Point(object):
         else:
             return self.time > other
 
-    def __eq__(self,other):
+    def __eq__(self, other):
         if isinstance(other, Point):
             return self.time == other.time
         elif isinstance(other, Interval):
             return other.minTime < self.time < other.maxTime
         else:
             return self.time == other
+
+    def __gte__(self, other):
+        return self > other or self == other
+
+    def __lte__(self, other):
+        return self < other or self == other
 
     def __cmp__(self, other):
         """
@@ -196,7 +202,7 @@ class Interval(object):
         else:
             return self.maxTime < other
 
-    def __gt__(self,other):
+    def __gt__(self, other):
         if hasattr(other, 'maxTime'):
             if self.overlaps(other):
                 raise(ValueError(self, other))
@@ -205,6 +211,12 @@ class Interval(object):
             return self.minTime > other.time
         else:
             return self.minTime > other
+
+    def __gte__(self, other):
+        return self > other or self == other
+
+    def __lte__(self, other):
+        return self < other or self == other
 
     def __cmp__(self, other):
         if hasattr(other, 'minTime') and hasattr(other, 'maxTime'):
