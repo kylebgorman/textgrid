@@ -10,11 +10,6 @@
 # sense as doctests). not particularly useful for users...
 
 if __name__ == '__main__':
-    import sys
-    import os
-    base = os.path.dirname(os.path.realpath(__file__))
-    print(base)
-    sys.path.append(base)
     import textgrid
     from os import remove
 
