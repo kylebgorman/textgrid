@@ -27,6 +27,7 @@
 # Kyle Gorman <gormanky@ohsu.edu>
 # Morgan Sonderegger <morgan.sonderegger@mcgill.ca>
 
+from __future__ import print_function
 
 import re
 import codecs
@@ -42,14 +43,14 @@ def readFile(f):
     This handles UTF-8, which is itself an ASCII extension, so also ASCII.
     """
     try:
-        source = open(f, 'r', encoding='utf-16')
+        source = codecs.open(f, 'r', encoding='utf-16')
         source.readline() # Read one line to ensure correct encoding
     except UnicodeError:
         try:
-            source = open(f, 'r', encoding='utf-8')
+            source = codecs.open(f, 'r', encoding='utf-8')
             source.readline() # Read one line to ensure correct encoding
         except UnicodeError:
-            source = open(f, 'r')
+            source = codecs.open(f, 'r')
             source.readline() # Read one line to ensure correct encoding
     source.readline() # header junk
     source.readline() # header junk
