@@ -66,12 +66,12 @@ class TestDoubleQuotes(unittest.TestCase):
         cls.interval_marks_txt = [' """Is anyone home?"""\n', ' "asked ""Pat"""\n']
         cls.point_marks_txt = [' """event"""\n', ' """event"" with quotes again"\n']
 
-    # @classmethod
-    # def tearDownClass(cls):
-        # remove('test_double_quotes.TextGrid')
-        # remove('test_double_quotes_tg.TextGrid')
-        # remove('test_double_quotes_it.IntervalTier')
-        # remove('test_double_quotes_pt.PointTier')
+    @classmethod
+    def tearDownClass(cls):
+        remove('test_double_quotes.TextGrid')
+        remove('test_double_quotes_tg.TextGrid')
+        remove('test_double_quotes_it.IntervalTier')
+        remove('test_double_quotes_pt.PointTier')
 
     def test_read_tg_double_quotes(self):
         for n, mark in enumerate(self.interval_marks):

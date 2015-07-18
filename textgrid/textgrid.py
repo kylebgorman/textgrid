@@ -51,8 +51,10 @@ def _getMark(text):
                       re.DOTALL)
         if m != None:
             break
-    return m.groups()[2][1:-1]
+    return m.groups()[2][1:-1].replace('""', '"')
 
+def _formatMark(text):
+    return text.replace('"', '""')
 
 def readFile(f):
     """
@@ -370,8 +372,8 @@ class PointTier(object):
         for i in range(int(source.readline().rstrip().split()[3])):
             source.readline().rstrip() # header
             itim = float(source.readline().rstrip().split()[2])
-            imrk = source.readline().rstrip().split()[2].replace('"', '')
-            self.points.append(Point(imrk, itim))
+            imrk = _getMark(source)
+            self.points.append(Point(itim, imrk))
 
     def write(self, f):
         """
@@ -384,12 +386,14 @@ class PointTier(object):
         print('Object class = "TextTier"\n', file=sink)
 
         print('xmin = {0}'.format(self.minTime), file=sink)
-        print('xmax = {0}'.format(self.maxTime), file=sink)
+        print('xmax = {0}'.format(self.maxTime if self.maxTime \
+                                          else self.points[-1].time),file=sink)
         print('points: size = {0}'.format(len(self)), file=sink)
         for (i, point) in enumerate(self.points, 1):
             print('points [{0}]:'.format(i), file=sink)
             print('\ttime = {0}'.format(point.time), file=sink)
-            print('\tmark = {0}'.format(point.mark), file=sink)
+            mark = _formatMark(point.mark)
+            print('\tmark = "{0}"'.format(mark), file=sink)
         sink.close()
 
     def bounds(self):
@@ -519,7 +523,7 @@ class IntervalTier(object):
             source.readline().rstrip() # header
             imin = float(source.readline().rstrip().split()[2])
             imax = float(source.readline().rstrip().split()[2])
-            imrk = source.readline().rstrip().split()[2].replace('"', '')
+            imrk = _getMark(source)
             self.intervals.append(Interval(imin, imax, imrk))
         source.close()
 
@@ -559,7 +563,8 @@ class IntervalTier(object):
             print('intervals [{0}]'.format(i),file=sink)
             print('\txmin = {0}'.format(interval.minTime),file=sink)
             print('\txmax = {0}'.format(interval.maxTime),file=sink)
-            print('\ttext = "{0}"'.format(interval.mark),file=sink)
+            mark = _formatMark(interval.mark)
+            print('\ttext = "{0}"'.format(mark),file=sink)
         sink.close()
 
     def bounds(self):
@@ -714,7 +719,7 @@ class TextGrid(object):
                     source.readline().rstrip() # header junk
                     jtim = round(float(source.readline().rstrip().split()[2]),
                                                                            5)
-                    jmrk = source.readline().rstrip().split()[2][1:-1]
+                    jmrk = _getMark(source)
                     itie.addPoint(Point(jtim, jmrk))
                 self.append(itie)
         source.close()
@@ -755,8 +760,8 @@ class TextGrid(object):
                                                         interval.minTime),file=sink)
                     print('\t\t\t\txmax = {0}'.format(
                                                         interval.maxTime),file=sink)
-                    print('\t\t\t\ttext = "{0}"'.format(
-                                                        interval.mark),file=sink)
+                    mark = _formatMark(interval.mark)
+                    print('\t\t\t\ttext = "{0}"'.format(mark),file=sink)
             elif tier.__class__ == PointTier: # PointTier
                 print('\t\tclass = "TextTier"',file=sink)
                 print('\t\tname = "{0}"'.format(tier.name),file=sink)
@@ -766,8 +771,8 @@ class TextGrid(object):
                 for (k, point) in enumerate(tier, 1):
                     print('\t\t\tpoints [{0}]:'.format(k),file=sink)
                     print('\t\t\t\ttime = {0}'.format(point.time),file=sink)
-                    print('\t\t\t\tmark = "{0}"'.format(
-                                                           point.mark),file=sink)
+                    mark = _formatMark(point.mark)
+                    print('\t\t\t\tmark = "{0}"'.format(mark),file=sink)
         sink.close()
 
     # alternative constructor
