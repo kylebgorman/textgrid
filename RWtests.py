@@ -9,6 +9,113 @@
 # Tests for the read-write functions in textgrid.py (they don't make much
 # sense as doctests). not particularly useful for users...
 
+import unittest
+
+tg_with_quotes = '''File type = "ooTextFile"
+Object class = "TextGrid"
+
+xmin = 0 
+xmax = 1 
+tiers? <exists> 
+size = 2 
+item []: 
+    item [1]:
+        class = "IntervalTier" 
+        name = "words" 
+        xmin = 0 
+        xmax = 1 
+        intervals: size = 2 
+        intervals [1]:
+            xmin = 0 
+            xmax = 0.5 
+            text = """Is anyone home?""" 
+        intervals [2]:
+            xmin = 0.5 
+            xmax = 1 
+            text = "asked ""Pat""" 
+    item [2]:
+        class = "TextTier" 
+        name = "points" 
+        xmin = 0 
+        xmax = 1 
+        points: size = 2 
+        points [1]:
+            number = 0.25 
+            mark = """event""" 
+        points [2]:
+            number = 0.75 
+            mark = """event"" with quotes again" 
+'''
+
+class TestDoubleQuotes(unittest.TestCase):
+
+    @classmethod
+    def setUpClass(cls):
+        with open('test_double_quotes.TextGrid', 'w') as tg_file:
+            tg_file.write(tg_with_quotes)
+
+        cls.tg = textgrid.TextGrid.fromFile('test_double_quotes.TextGrid')
+
+        cls.tg.write('test_double_quotes_tg.TextGrid')
+        cls.tg[0].write('test_double_quotes_it.IntervalTier')
+        cls.tg[1].write('test_double_quotes_pt.PointTier')
+
+        cls.interval_marks = ['"Is anyone home?"', 'asked "Pat"']
+        cls.point_marks = ['"event"', '"event" with quotes again']
+
+        cls.interval_marks_txt = [' """Is anyone home?"""\n', ' "asked ""Pat"""\n']
+        cls.point_marks_txt = [' """event"""\n', ' """event"" with quotes again"\n']
+
+    # @classmethod
+    # def tearDownClass(cls):
+        # remove('test_double_quotes.TextGrid')
+        # remove('test_double_quotes_tg.TextGrid')
+        # remove('test_double_quotes_it.IntervalTier')
+        # remove('test_double_quotes_pt.PointTier')
+
+    def test_read_tg_double_quotes(self):
+        for n, mark in enumerate(self.interval_marks):
+            assert self.tg[0][n].mark == mark
+
+        for n, mark in enumerate(self.point_marks):
+            assert self.tg[1][n].mark == mark
+
+    def test_write_tg_double_quotes(self):
+        with open('test_double_quotes_tg.TextGrid') as tg_file:
+            tg_string = tg_file.read()
+
+        for mark in self.interval_marks_txt:
+            assert mark in tg_string
+
+        for mark in self.point_marks_txt:
+            assert mark in tg_string
+
+    def test_read_it_double_quotes(self):
+        it = textgrid.IntervalTier.fromFile('test_double_quotes_it.IntervalTier')
+
+        for n, mark in enumerate(self.interval_marks):
+            assert it[n].mark == mark
+
+    def test_write_it_double_quotes(self):
+        with open('test_double_quotes_it.IntervalTier') as it_file:
+            it_string = it_file.read()
+
+        for mark in self.interval_marks_txt:
+            assert mark in it_string
+
+    def test_read_pt_double_quotes(self):
+        pt = textgrid.PointTier.fromFile('test_double_quotes_pt.PointTier')
+
+        for n, mark in enumerate(self.point_marks):
+            assert pt[n].mark == mark
+
+    def test_write_pt_double_quotes(self):
+        with open('test_double_quotes_pt.PointTier') as pt_file:
+            pt_string = pt_file.read()
+
+        for mark in self.point_marks_txt:
+            assert mark in pt_string
+
 if __name__ == '__main__':
     import textgrid
     from os import remove
@@ -170,4 +277,7 @@ line."
 This latter line shouldn't be pulled in at all.
 """
     ff = FakeFile(some_text)
-    print(textgrid.TextGrid._getMark(ff))
+    print(textgrid.textgrid._getMark(ff))
+
+    # test reading/writing with double quotes in marks
+    unittest.main()
