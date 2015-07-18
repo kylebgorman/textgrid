@@ -37,6 +37,23 @@ from sys import stderr
 from bisect import bisect_left
 
 
+def _getMark(text):
+    """
+    Get the "mark" text on a line. Since Praat doesn't prevent you
+    from using your platform's newline character in "text" fields, we
+    read until we find a match. Regression tests are in `RWtests.py`.
+    """
+    m = None
+    my_line = ''
+    while True:
+        my_line += text.readline()
+        m = re.search(r'(\S+)\s(=)\s(".*")', my_line,
+                      re.DOTALL)
+        if m != None:
+            break
+    return m.groups()[2][1:-1]
+
+
 def readFile(f):
     """
     This helper method returns an appropriate file handle given a path f.
@@ -679,23 +696,6 @@ class TextGrid(object):
         """
         return (self.tiers.pop(i) if i else self.tiers.pop())
 
-    @staticmethod
-    def _getMark(text):
-        """
-        Get the "mark" text on a line. Since Praat doesn't prevent you
-        from using your platform's newline character in "text" fields, we
-        read until we find a match. Regression tests are in `RWtests.py`.
-        """
-        m = None
-        my_line = ''
-        while True:
-            my_line += text.readline()
-            m = re.search(r'(\S+)\s(=)\s(".*")', my_line,
-                          re.DOTALL)
-            if m != None:
-                break
-        return m.groups()[2][1:-1]
-
     def read(self, f):
         """
         Read the tiers contained in the Praat-formated TextGrid file
@@ -718,7 +718,7 @@ class TextGrid(object):
                     source.readline().rstrip().split() # header junk
                     jmin = round(float(source.readline().rstrip().split()[2]), 5)
                     jmax = round(float(source.readline().rstrip().split()[2]), 5)
-                    jmrk = self._getMark(source)
+                    jmrk = _getMark(source)
                     if jmin < jmax: # non-null
                         itie.addInterval(Interval(jmin, jmax, jmrk))
                 self.append(itie)
