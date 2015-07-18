@@ -334,12 +334,6 @@ class PointTier(object):
     def __getitem__(self, i):
         return self.points[i]
 
-    def __min__(self):
-        return self.minTime
-
-    def __max__(self):
-        return self.maxTime
-
     def add(self, time, mark):
         """
         constructs a Point and adds it to the PointTier, maintaining order
@@ -387,10 +381,10 @@ class PointTier(object):
         """
         sink = f if hasattr(f, 'write') else codecs.open(f, 'w', 'UTF-8')
         print('File type = "ooTextFile"', file=sink)
-        print('Object class = "TextTier"', file=sink)
+        print('Object class = "TextTier"\n', file=sink)
 
-        print('xmin = {0}'.format(min(self)), file=sink)
-        print('xmax = {0}'.format(max(self)), file=sink)
+        print('xmin = {0}'.format(self.minTime), file=sink)
+        print('xmax = {0}'.format(self.maxTime), file=sink)
         print('points: size = {0}'.format(len(self)), file=sink)
         for (i, point) in enumerate(self.points, 1):
             print('points [{0}]:'.format(i), file=sink)
@@ -470,12 +464,6 @@ class IntervalTier(object):
 
     def __getitem__(self, i):
         return self.intervals[i]
-
-    def __min__(self):
-        return self.minTime
-
-    def __max__(self):
-        return self.maxTime
 
     def add(self, minTime, maxTime, mark):
         self.addInterval(Interval(minTime, maxTime, mark))
@@ -671,12 +659,6 @@ class TextGrid(object):
         """
         return [tier.name for tier in self.tiers]
 
-    def __min__(self):
-        return self.minTime
-
-    def __max__(self):
-        return self.maxTime
-
     def append(self, tier):
         if self.maxTime is not None and tier.maxTime is not None and tier.maxTime > self.maxTime:
             raise ValueError(self.maxTime) # too late
@@ -778,8 +760,8 @@ class TextGrid(object):
             elif tier.__class__ == PointTier: # PointTier
                 print('\t\tclass = "TextTier"',file=sink)
                 print('\t\tname = "{0}"'.format(tier.name),file=sink)
-                print('\t\txmin = {0}'.format(min(tier)),file=sink)
-                print('\t\txmax = {0}'.format(max(tier)),file=sink)
+                print('\t\txmin = {0}'.format(tier.minTime),file=sink)
+                print('\t\txmax = {0}'.format(maxT),file=sink)
                 print('\t\tpoints: size = {0}'.format(len(tier)),file=sink)
                 for (k, point) in enumerate(tier, 1):
                     print('\t\t\tpoints [{0}]:'.format(k),file=sink)
