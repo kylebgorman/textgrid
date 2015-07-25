@@ -82,32 +82,6 @@ class Point(object):
     Represents a point in time with an associated textual mark, as stored
     in a PointTier.
 
-    # Point/Point comparison
-    >>> foo = Point(3.0, 'foo')
-    >>> bar = Point(4.0, 'bar')
-    >>> foo < bar
-    True
-    >>> foo == Point(3.0, 'baz')
-    True
-    >>> bar > foo
-    True
-
-    # Point/Value comparison
-    >>> foo < 4.0
-    True
-    >>> foo == 3.0
-    True
-    >>> foo > 5.0
-    False
-
-    # Point/Interval comparison
-    >>> baz = Interval(3.0, 5.0, 'baz')
-    >>> foo < baz
-    False
-    >>> foo == baz
-    False
-    >>> bar == baz
-    True
     """
 
     def __init__(self, time, mark):
@@ -182,17 +156,6 @@ class Interval(object):
     Represents an interval of time, with an associated textual mark, as
     stored in an IntervalTier.
 
-    >>> foo = Point(3.0, 'foo')
-    >>> bar = Point(4.0, 'bar')
-    >>> baz = Interval(3.0, 5.0, 'baz')
-    >>> foo in baz
-    True
-    >>> 3.0 in baz
-    True
-    >>> bar in baz
-    True
-    >>> 4.0 in baz
-    True
     """
 
     def __init__(self, minTime, maxTime, mark):
@@ -304,15 +267,6 @@ class PointTier(object):
     (e.g., for point in pointtier). A PointTier is used much like a Python
     set in that it has add/remove methods, not append/extend methods.
 
-    >>> foo = PointTier('foo')
-    >>> foo.add(4.0, 'bar')
-    >>> foo.add(2.0, 'baz')
-    >>> foo
-    PointTier(foo, [Point(2.0, baz), Point(4.0, bar)])
-    >>> foo.remove(4.0, 'bar')
-    >>> foo.add(6.0, 'bar')
-    >>> foo
-    PointTier(foo, [Point(2.0, baz), Point(6.0, bar)])
     """
 
     def __init__(self, name=None, minTime=0., maxTime=None):
@@ -414,37 +368,6 @@ class IntervalTier(object):
     (e.g., for interval in intervaltier). An IntervalTier is used much like a
     Python set in that it has add/remove methods, not append/extend methods.
 
-    >>> foo = IntervalTier('foo')
-    >>> foo.add(0.0, 2.0, 'bar')
-    >>> foo.add(2.0, 2.5, 'baz')
-    >>> foo
-    IntervalTier(foo, [Interval(0.0, 2.0, bar), Interval(2.0, 2.5, baz)])
-    >>> foo.remove(0.0, 2.0, 'bar')
-    >>> foo
-    IntervalTier(foo, [Interval(2.0, 2.5, baz)])
-    >>> foo.add(0.0, 1.0, 'bar')
-    >>> foo
-    IntervalTier(foo, [Interval(0.0, 1.0, bar), Interval(2.0, 2.5, baz)])
-    >>> foo.add(1.0, 3.0, 'baz')
-    Traceback (most recent call last):
-        ...
-    ValueError: (Interval(2.0, 2.5, baz), Interval(1.0, 3.0, baz))
-    >>> foo.intervalContaining(2.25)
-    Interval(2.0, 2.5, baz)
-    >>> foo = IntervalTier('foo', maxTime=3.5)
-    >>> foo.add(2.7, 3.7, 'bar')
-    Traceback (most recent call last):
-        ...
-    ValueError: 3.5
-    >>> foo.add(1.3, 2.4, 'bar')
-    >>> foo.add(2.7, 3.3, 'baz')
-    >>> temp = foo._fillInTheGaps('') # not for users, but a good quick test
-    >>> temp[0]
-    Interval(0.0, 1.3, None)
-    >>> temp[-1]
-    Interval(3.3, 3.5, None)
-    >>> temp[2]
-    Interval(2.4, 2.7, None)
     """
 
     def __init__(self, name=None, minTime=0., maxTime=None):
@@ -589,24 +512,6 @@ class TextGrid(object):
     instance is given order by the user. Like a true Python list, there
     are append/extend methods for a TextGrid.
 
-    >>> foo = TextGrid('foo')
-    >>> bar = PointTier('bar')
-    >>> bar.add(1.0, 'spam')
-    >>> bar.add(2.75, 'eggs')
-    >>> baz = IntervalTier('baz')
-    >>> baz.add(0.0, 2.5, 'spam')
-    >>> baz.add(2.5, 3.5, 'eggs')
-    >>> foo.extend([bar, baz])
-    >>> foo.append(bar) # now there are two copies of bar in the TextGrid
-    >>> foo.minTime
-    0.0
-    >>> foo.maxTime # nothing
-    >>> foo.getFirst('bar')
-    PointTier(bar, [Point(1.0, spam), Point(2.75, eggs)])
-    >>> foo.getList('bar')[1]
-    PointTier(bar, [Point(1.0, spam), Point(2.75, eggs)])
-    >>> foo.getNames()
-    ['bar', 'baz', 'bar']
     """
 
     def __init__(self, name=None, minTime=0., maxTime=None):
@@ -882,8 +787,3 @@ class MLF(object):
             my_path = os.path.join(prefix, root + '.TextGrid')
             grid.write(codecs.open(my_path, 'w', 'UTF-8'))
         return len(self.grids)
-
-
-if __name__ == '__main__':
-    import doctest
-    doctest.testmod()

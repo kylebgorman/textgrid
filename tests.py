@@ -300,5 +300,154 @@ This latter line shouldn't be pulled in at all.
 not "technically" ill-formed
 line.""")
 
+
+class TestPointComparison(unittest.TestCase):
+
+    @classmethod
+    def setUpClass(cls):
+        cls.foo = textgrid.textgrid.Point(3.0, 'foo')
+        cls.bar = textgrid.textgrid.Point(4.0, 'bar')
+        cls.baz = textgrid.textgrid.Interval(3.0, 5.0, 'baz')
+
+    def test_point_point(self):
+        self.assertLess(self.foo, self.bar)
+        self.assertEqual(self.foo, textgrid.textgrid.Point(3.0, 'baz'))
+        self.assertGreater(self.bar, self.foo)
+
+    def test_point_value(self):
+        self.assertLess(self.foo, 4.0)
+        self.assertEqual(self.foo, 3.0)
+        self.assertFalse(self.foo > 5.0)
+    
+    def test_point_interval(self):
+        self.assertFalse(self.foo < self.baz)
+        self.assertFalse(self.foo == self.baz)
+        self.assertEqual(self.bar, self.baz)
+
+
+class TestIntervalComparison(unittest.TestCase):
+
+    @classmethod
+    def setUpClass(cls):
+        cls.foo = textgrid.textgrid.Point(3.0, 'foo')
+        cls.bar = textgrid.textgrid.Point(4.0, 'bar')
+        cls.baz = textgrid.textgrid.Interval(3.0, 5.0, 'baz')
+
+    def test_point_in_interval(self):
+        self.assertIn(self.foo, self.baz)
+        self.assertIn(self.bar, self.baz)
+    
+    def test_value_in_interval(self):
+        self.assertIn(3.0, self.baz)
+        self.assertIn(4.0, self.baz)
+
+
+class TestPointTier(unittest.TestCase):
+
+    def setUp(self):
+        self.foo = textgrid.textgrid.PointTier('foo')
+    
+    def test_add(self):
+        self.foo.add(4.0, 'bar')
+        self.foo.add(2.0, 'baz')
+        
+        self.assertEqual(repr(self.foo), 'PointTier(foo, [Point(2.0, baz), Point(4.0, bar)])')
+        
+    def test_remove(self):
+        self.foo.add(4.0, 'bar')
+        self.foo.add(2.0, 'baz')
+        self.foo.remove(4.0, 'bar')
+        self.foo.add(6.0, 'bar')
+        
+        self.assertEqual(repr(self.foo), 'PointTier(foo, [Point(2.0, baz), Point(6.0, bar)])')
+
+
+class TestIntervalTier(unittest.TestCase):
+
+    def setUp(self):
+        self.foo = textgrid.textgrid.IntervalTier('foo')
+        
+    def test_add(self):
+        self.foo.add(0.0, 2.0, 'bar')
+        self.foo.add(2.0, 2.5, 'baz')
+        
+        self.assertEqual(repr(self.foo), 'IntervalTier(foo, [Interval(0.0, 2.0, bar), Interval(2.0, 2.5, baz)])')
+        
+    def test_remove(self):
+        self.foo.add(0.0, 2.0, 'bar')
+        self.foo.add(2.0, 2.5, 'baz')
+        self.foo.remove(0.0, 2.0, 'bar')
+        
+        self.assertEqual(repr(self.foo), 'IntervalTier(foo, [Interval(2.0, 2.5, baz)])')
+
+    def test_add_before(self):
+        self.foo.add(2.0, 2.5, 'baz')
+        self.foo.add(0.0, 1.0, 'bar')
+        
+        self.assertEqual(repr(self.foo), 'IntervalTier(foo, [Interval(0.0, 1.0, bar), Interval(2.0, 2.5, baz)])')
+
+    def test_add_fail(self):
+        self.foo.add(0.0, 1.0, 'bar')
+        self.foo.add(2.0, 2.5, 'baz')
+        
+        with self.assertRaisesRegexp(ValueError, '\(Interval\(2.0, 2.5, baz\), Interval\(1.0, 3.0, baz\)\)'):
+            self.foo.add(1.0, 3.0, 'baz')
+            
+    def test_interval_containing(self):
+        self.foo.add(0.0, 1.0, 'bar')
+        self.foo.add(2.0, 2.5, 'baz')
+        
+        self.assertEqual(repr(self.foo.intervalContaining(2.25)), 'Interval(2.0, 2.5, baz)')
+        
+
+    def test_add_too_late(self):
+        foo = textgrid.textgrid.IntervalTier('foo', maxTime=3.5)
+        
+        with self.assertRaisesRegexp(ValueError, '3.5'):
+            foo.add(2.7, 3.7, 'bar')
+    
+    def test_fill_in_the_gaps(self):
+        foo = textgrid.textgrid.IntervalTier('foo', maxTime=3.5)
+        foo.add(1.3, 2.4, 'bar')
+        foo.add(2.7, 3.3, 'baz')
+        
+        temp = foo._fillInTheGaps('')
+        
+        self.assertEqual(repr(temp[0]), 'Interval(0.0, 1.3, None)')
+        self.assertEqual(repr(temp[-1]), 'Interval(3.3, 3.5, None)')
+        self.assertEqual(repr(temp[2]), 'Interval(2.4, 2.7, None)')
+
+
+class TestTextGrid(unittest.TestCase):
+
+    @classmethod
+    def setUpClass(cls):
+        cls.foo = textgrid.textgrid.TextGrid('foo')
+
+        cls.bar = textgrid.textgrid.PointTier('bar')
+        cls.bar.add(1.0, 'spam')
+        cls.bar.add(2.75, 'eggs')
+
+        cls.baz = textgrid.textgrid.IntervalTier('baz')
+        cls.baz.add(0.0, 2.5, 'spam')
+        cls.baz.add(2.5, 3.5, 'eggs')
+
+        cls.foo.extend([cls.bar, cls.baz])
+        cls.foo.append(cls.bar)
+
+    def test_mintime_maxtime(self):
+        self.assertEqual(self.foo.minTime, 0.0)
+        self.assertIsNone(self.foo.maxTime)
+
+    def test_get_first(self):
+        self.assertEqual(repr(self.foo.getFirst('bar')), 'PointTier(bar, [Point(1.0, spam), Point(2.75, eggs)])')
+
+    def test_get_list(self):
+        self.assertEqual(repr(self.foo.getList('bar')[1]), 'PointTier(bar, [Point(1.0, spam), Point(2.75, eggs)])')
+
+    def test_get_names(self):
+        self.assertListEqual(self.foo.getNames(), ['bar', 'baz', 'bar'])
+
+
 if __name__ == '__main__':
     unittest.main()
