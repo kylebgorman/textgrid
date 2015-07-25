@@ -9,7 +9,13 @@
 # Tests for the read-write functions in textgrid.py (they don't make much
 # sense as doctests). not particularly useful for users...
 
+from __future__ import unicode_literals
+
+import textgrid
 import unittest
+
+from io import StringIO
+from os import remove
 
 tg_with_quotes = '''File type = "ooTextFile"
 Object class = "TextGrid"
@@ -47,85 +53,7 @@ item []:
             mark = """event"" with quotes again" 
 '''
 
-class TestDoubleQuotes(unittest.TestCase):
-
-    @classmethod
-    def setUpClass(cls):
-        with open('test_double_quotes.TextGrid', 'w') as tg_file:
-            tg_file.write(tg_with_quotes)
-
-        cls.tg = textgrid.TextGrid.fromFile('test_double_quotes.TextGrid')
-
-        cls.tg.write('test_double_quotes_tg.TextGrid')
-        cls.tg[0].write('test_double_quotes_it.IntervalTier')
-        cls.tg[1].write('test_double_quotes_pt.PointTier')
-
-        cls.interval_marks = ['"Is anyone home?"', 'asked "Pat"']
-        cls.point_marks = ['"event"', '"event" with quotes again']
-
-        cls.interval_marks_txt = [' """Is anyone home?"""\n', ' "asked ""Pat"""\n']
-        cls.point_marks_txt = [' """event"""\n', ' """event"" with quotes again"\n']
-
-    @classmethod
-    def tearDownClass(cls):
-        remove('test_double_quotes.TextGrid')
-        remove('test_double_quotes_tg.TextGrid')
-        remove('test_double_quotes_it.IntervalTier')
-        remove('test_double_quotes_pt.PointTier')
-
-    def test_read_tg_double_quotes(self):
-        for n, mark in enumerate(self.interval_marks):
-            assert self.tg[0][n].mark == mark
-
-        for n, mark in enumerate(self.point_marks):
-            assert self.tg[1][n].mark == mark
-
-    def test_write_tg_double_quotes(self):
-        with open('test_double_quotes_tg.TextGrid') as tg_file:
-            tg_string = tg_file.read()
-
-        for mark in self.interval_marks_txt:
-            assert mark in tg_string
-
-        for mark in self.point_marks_txt:
-            assert mark in tg_string
-
-    def test_read_it_double_quotes(self):
-        it = textgrid.IntervalTier.fromFile('test_double_quotes_it.IntervalTier')
-
-        for n, mark in enumerate(self.interval_marks):
-            assert it[n].mark == mark
-
-    def test_write_it_double_quotes(self):
-        with open('test_double_quotes_it.IntervalTier') as it_file:
-            it_string = it_file.read()
-
-        for mark in self.interval_marks_txt:
-            assert mark in it_string
-
-    def test_read_pt_double_quotes(self):
-        pt = textgrid.PointTier.fromFile('test_double_quotes_pt.PointTier')
-
-        for n, mark in enumerate(self.point_marks):
-            assert pt[n].mark == mark
-
-    def test_write_pt_double_quotes(self):
-        with open('test_double_quotes_pt.PointTier') as pt_file:
-            pt_string = pt_file.read()
-
-        for mark in self.point_marks_txt:
-            assert mark in pt_string
-
-if __name__ == '__main__':
-    import textgrid
-    from os import remove
-
-    ## print
-    print('TEST: if this works, you will see "True" twice below...')
-
-    ## MLF
-    # write MLF file
-    open('baz.mlf', 'w').write("""#!MFL!#
+mlf_data = """#!MFL!#
 "foo.lab"
 0 5000000 sil sil
 5000000 7000000 SH SHOW
@@ -232,52 +160,133 @@ if __name__ == '__main__':
 146000000 146000000 sp
 146000000 148000000 sil sil
 .
-""")
-    # read it in, writing over mlf
-    mlf = textgrid.MLF('baz.mlf')
-    # write them to foo.TextGrid and bar.TextGrid
-    mlf.write()
+"""
 
-    ## TextGrid
-    # read foo.TextGrid
-    foo = textgrid.TextGrid.fromFile('foo.TextGrid')
-    # write it out
-    foo.write('foo_copy.TextGrid')
-    # read it back in
-    foo_copy = textgrid.TextGrid.fromFile('foo_copy.TextGrid')
-    print(repr(foo) == repr(foo_copy))
 
-    ## IntervalTier
-    phones = foo[0]
-    # write it out
-    phones.write('phones.IntervalTier')
-    # read it back in
-    phones_copy = textgrid.IntervalTier.fromFile('phones.IntervalTier', 'phones')
-    print(repr(phones) == repr(phones_copy))
+class TestDoubleQuotes(unittest.TestCase):
 
-    ## clean up the mess we've made
-    remove('baz.mlf')
-    remove('foo.TextGrid')
-    remove('foo_copy.TextGrid')
-    remove('bar.TextGrid')
-    remove('phones.IntervalTier')
+    @classmethod
+    def setUpClass(cls):
+        with open('test_double_quotes.TextGrid', 'w') as tg_file:
+            tg_file.write(tg_with_quotes)
 
-    ## check multiline text field handling
-    class FakeFile(object):
-        def __init__(self, string):
-            self.lines = string.splitlines(True)
-            # this preserves final newline char
-        def readline(self):
-            return self.lines.pop(0)
+        cls.tg = textgrid.TextGrid.fromFile('test_double_quotes.TextGrid')
 
-    print('TEST: if this works, you will see a three-line sentence below...')
-    some_text = """            text = "This is an annoying, but
+        cls.tg.write('test_double_quotes_tg.TextGrid')
+        cls.tg[0].write('test_double_quotes_it.IntervalTier')
+        cls.tg[1].write('test_double_quotes_pt.PointTier')
+
+        cls.interval_marks = ['"Is anyone home?"', 'asked "Pat"']
+        cls.point_marks = ['"event"', '"event" with quotes again']
+
+        cls.interval_marks_txt = [' """Is anyone home?"""\n', ' "asked ""Pat"""\n']
+        cls.point_marks_txt = [' """event"""\n', ' """event"" with quotes again"\n']
+
+    @classmethod
+    def tearDownClass(cls):
+        remove('test_double_quotes.TextGrid')
+        remove('test_double_quotes_tg.TextGrid')
+        remove('test_double_quotes_it.IntervalTier')
+        remove('test_double_quotes_pt.PointTier')
+
+    def test_read_tg_double_quotes(self):
+        for n, mark in enumerate(self.interval_marks):
+            self.assertEqual(self.tg[0][n].mark, mark)
+
+        for n, mark in enumerate(self.point_marks):
+            self.assertEqual(self.tg[1][n].mark, mark)
+
+    def test_write_tg_double_quotes(self):
+        with open('test_double_quotes_tg.TextGrid') as tg_file:
+            tg_string = tg_file.read()
+
+        for mark in self.interval_marks_txt:
+            self.assertIn(mark, tg_string)
+
+        for mark in self.point_marks_txt:
+            self.assertIn(mark, tg_string)
+
+    def test_read_it_double_quotes(self):
+        it = textgrid.IntervalTier.fromFile('test_double_quotes_it.IntervalTier')
+
+        for n, mark in enumerate(self.interval_marks):
+            self.assertEqual(it[n].mark, mark)
+
+    def test_write_it_double_quotes(self):
+        with open('test_double_quotes_it.IntervalTier') as it_file:
+            it_string = it_file.read()
+
+        for mark in self.interval_marks_txt:
+            self.assertIn(mark, it_string)
+
+    def test_read_pt_double_quotes(self):
+        pt = textgrid.PointTier.fromFile('test_double_quotes_pt.PointTier')
+
+        for n, mark in enumerate(self.point_marks):
+            self.assertEqual(pt[n].mark, mark)
+
+    def test_write_pt_double_quotes(self):
+        with open('test_double_quotes_pt.PointTier') as pt_file:
+            pt_string = pt_file.read()
+
+        for mark in self.point_marks_txt:
+            self.assertIn(mark, pt_string)
+
+
+class TestRoundTrip(unittest.TestCase):
+
+    def setUp(self):
+        with open('baz.mlf', 'w') as mlf_file:
+            mlf_file.write(mlf_data)
+
+    def tearDown(self):
+        remove('baz.mlf')
+        remove('foo.TextGrid')
+        remove('foo_copy.TextGrid')
+        remove('bar.TextGrid')
+        remove('phones.IntervalTier')
+
+    def test_roundtrip(self):
+        ## MLF
+        # read it in, writing over mlf
+        mlf = textgrid.MLF('baz.mlf')
+        # write them to foo.TextGrid and bar.TextGrid
+        mlf.write()
+
+        ## TextGrid
+        # read foo.TextGrid
+        foo = textgrid.TextGrid.fromFile('foo.TextGrid')
+        # write it out
+        foo.write('foo_copy.TextGrid')
+        # read it back in
+        foo_copy = textgrid.TextGrid.fromFile('foo_copy.TextGrid')
+
+        self.assertEqual(repr(foo), repr(foo_copy))
+
+        ## IntervalTier
+        phones = foo[0]
+        # write it out
+        phones.write('phones.IntervalTier')
+        # read it back in
+        phones_copy = textgrid.IntervalTier.fromFile('phones.IntervalTier', 'phones')
+
+        self.assertEqual(repr(phones), repr(phones_copy))
+
+
+class TestMultilineTextField(unittest.TestCase):
+
+    def test_multiline(self):
+        some_text = """            text = "This is an annoying, but
 not technically ill-formed
 line."
 This latter line shouldn't be pulled in at all.
 """
-    ff = FakeFile(some_text)
-    print(textgrid.textgrid._getMark(ff))
 
-    # test reading/writing with double quotes in marks
+        source = StringIO(some_text)
+
+        self.assertEqual(textgrid.textgrid._getMark(source), """This is an annoying, but
+not technically ill-formed
+line.""")
+
+if __name__ == '__main__':
     unittest.main()
