@@ -288,5 +288,17 @@ This latter line shouldn't be pulled in at all.
 not technically ill-formed
 line.""")
 
+    def test_multiline_with_double_quotes(self):
+        multiline_text_with_quotes = '''            text = "This is an ""annoying"", but
+not technically ill-formed
+line."
+This latter line shouldn't be pulled in at all.
+'''
+        source = StringIO(multiline_text_with_quotes)
+    
+        self.assertEqual(textgrid.textgrid._getMark(source), """This is an "annoying", but
+not technically ill-formed
+line.""")
+
 if __name__ == '__main__':
     unittest.main()
