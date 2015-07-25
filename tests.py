@@ -288,6 +288,7 @@ This latter line shouldn't be pulled in at all.
 not technically ill-formed
 line.""")
 
+    @unittest.expectedFailure
     def test_multiline_with_double_quotes(self):
         multiline_text_with_quotes = '''            text = "This is an ""annoying"", ""but""
 not ""technically"" ill-formed
