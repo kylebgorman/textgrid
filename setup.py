@@ -6,5 +6,6 @@ setup(
     author='Kyle Gorman et al.',
     author_email='gormanky@ohsu.edu',
     packages=['textgrid'],
+    test_suite='tests',
     description='Praat TextGrid manipulation.'
 )
