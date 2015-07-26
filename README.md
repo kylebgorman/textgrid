@@ -3,11 +3,7 @@ textgrid.py
 
 Python classes for Praat TextGrid and TextTier files (and HTK .mlf files)
 
-Max Bane <bane@uchicago.edu>
-
-Kyle Gorman <kgorman@ling.upenn.edu>
-
-Morgan Sonderegger <morgan@cs.uchicago.edu>
+Kyle Gorman <kylebgorman@gmail.com> and contributors (see commit history).
 
 How to cite:
 ------------
