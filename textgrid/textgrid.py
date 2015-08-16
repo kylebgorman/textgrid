@@ -47,7 +47,7 @@ def _getMark(text):
     line = text.readline()
 
     # check that the line begins with a valid entry type
-    if not re.match('^\s*(text|mark) = "', line):
+    if not re.match(r'^\s*(text|mark) = "', line):
         raise ValueError('Bad entry: ' + line)
 
     # read until the number of double-quotes is even
@@ -59,7 +59,7 @@ def _getMark(text):
 
         line += next_line
 
-    entry = re.match('^\s*(text|mark) = "(.*?)"\s*$', line, re.DOTALL)
+    entry = re.match(r'^\s*(text|mark) = "(.*?)"\s*$', line, re.DOTALL)
 
     return entry.groups()[1].replace('""', '"')
 
