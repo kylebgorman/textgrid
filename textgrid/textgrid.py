@@ -52,12 +52,12 @@ def _getMark(text):
 
     # read until the number of double-quotes is even
     while line.count('"') % 2:
-        next = text.readline()
+        next_line = text.readline()
 
-        if not next:
+        if not next_line:
             raise EOFError('Bad entry: ' + line[:20] + '...')
 
-        line += next
+        line += next_line
 
     entry = re.match('^\s*(text|mark) = "(.*?)"\s*$', line, re.DOTALL)
 
