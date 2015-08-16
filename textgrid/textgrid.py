@@ -39,19 +39,29 @@ from bisect import bisect_left
 
 def _getMark(text):
     """
-    Get the "mark" text on a line. Since Praat doesn't prevent you
-    from using your platform's newline character in "text" fields, we
-    read until we find a match. Regression tests are in `RWtests.py`.
+    Return the mark or text entry on a line. Praat escapes double-quotes
+    by doubling them, so doubled double-quotes are read as single
+    double-quotes. Newlines within an entry are allowed.
     """
-    m = None
-    my_line = ''
-    while True:
-        my_line += text.readline()
-        m = re.search(r'(\S+)\s(=)\s(".*")', my_line,
-                      re.DOTALL)
-        if m != None:
-            break
-    return m.groups()[2][1:-1].replace('""', '"')
+
+    line = text.readline()
+
+    # check that the line begins with a valid entry type
+    if not re.match('^\s*(text|mark) = "', line):
+        raise ValueError('Bad entry: ' + line)
+
+    # read until the number of double-quotes is even
+    while line.count('"') % 2:
+        next = text.readline()
+
+        if not next:
+            raise EOFError('Bad entry: ' + line[:20] + '...')
+
+        line += next
+
+    entry = re.match('^\s*(text|mark) = "(.*?)"\s*$', line, re.DOTALL)
+
+    return entry.groups()[1].replace('""', '"')
 
 def _formatMark(text):
     return text.replace('"', '""')
