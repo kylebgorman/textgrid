@@ -36,8 +36,7 @@ import os.path
 from sys import stderr
 from bisect import bisect_left
 
-# module-global variables
-_default_precision = 5    # for rounding times while reading files
+DEFAULT_PRECISION = 15    # for rounding times while reading files
 
 def _getMark(text):
     """
@@ -600,7 +599,7 @@ class TextGrid(object):
         """
         return (self.tiers.pop(i) if i else self.tiers.pop())
 
-    def read(self, f, round_digits=_default_precision):
+    def read(self, f, round_digits=DEFAULT_PRECISION):
         """
         Read the tiers contained in the Praat-formatted TextGrid file
         indicated by string f. Times are rounded to the specified precision.
@@ -739,7 +738,7 @@ class MLF(object):
         """
         return self.grids[i]
 
-    def read(self, f, samplerate, round_digits=_default_precision):
+    def read(self, f, samplerate, round_digits=DEFAULT_PRECISION):
         source = open(f, 'r') # HTK returns ostensible ASCII
         samplerate = float(samplerate)
         source.readline() # header
