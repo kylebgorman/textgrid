@@ -739,7 +739,7 @@ class MLF(object):
         """
         return self.grids[i]
 
-    def read(self, f, samplerate):
+    def read(self, f, samplerate, round_digits=_default_precision):
         source = open(f, 'r') # HTK returns ostensible ASCII
         samplerate = float(samplerate)
         source.readline() # header
@@ -756,8 +756,8 @@ class MLF(object):
                 while 1: # loop over the lines in each grid
                     line = source.readline().rstrip().split()
                     if len(line) == 4: # word on this baby
-                        pmin = round(float(line[0]) / samplerate, 5)
-                        pmax = round(float(line[1]) / samplerate, 5)
+                        pmin = round(float(line[0]) / samplerate, round_digits)
+                        pmax = round(float(line[1]) / samplerate, round_digits)
                         if pmin == pmax:
                             raise ValueError('null duration interval')
                         phon.add(pmin, pmax, line[2])
@@ -767,8 +767,8 @@ class MLF(object):
                         wsrt = pmin
                         wend = pmax
                     elif len(line) == 3: # just phone
-                        pmin = round(float(line[0]) / samplerate, 5)
-                        pmax = round(float(line[1]) / samplerate, 5)
+                        pmin = round(float(line[0]) / samplerate, round_digits)
+                        pmax = round(float(line[1]) / samplerate, round_digits)
                         if line[2] == 'sp' and pmin != pmax:
                             if wmrk:
                                 word.add(wsrt, wend, wmrk)
