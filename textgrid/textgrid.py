@@ -36,6 +36,8 @@ import os.path
 from sys import stderr
 from bisect import bisect_left
 
+# module-global variables
+_default_precision = 5    # for rounding times while reading files
 
 def _getMark(text):
     """
@@ -598,14 +600,14 @@ class TextGrid(object):
         """
         return (self.tiers.pop(i) if i else self.tiers.pop())
 
-    def read(self, f):
+    def read(self, f, round_digits=_default_precision):
         """
-        Read the tiers contained in the Praat-formated TextGrid file
-        indicated by string f
+        Read the tiers contained in the Praat-formatted TextGrid file
+        indicated by string f. Times are rounded to the specified precision.
         """
         source = readFile(f)
-        self.minTime = round(float(source.readline().split()[2]), 5)
-        self.maxTime = round(float(source.readline().split()[2]), 5)
+        self.minTime = round(float(source.readline().split()[2]), round_digits)
+        self.maxTime = round(float(source.readline().split()[2]), round_digits)
         source.readline() # more header junk
         m = int(source.readline().rstrip().split()[2]) # will be self.n
         source.readline()
@@ -613,27 +615,33 @@ class TextGrid(object):
             source.readline()
             if source.readline().rstrip().split()[2] == '"IntervalTier"':
                 inam = source.readline().rstrip().split(' = ')[1].strip('"')
-                imin = round(float(source.readline().rstrip().split()[2]), 5)
-                imax = round(float(source.readline().rstrip().split()[2]), 5)
+                imin = round(float(source.readline().rstrip().split()[2]),
+                             round_digits)
+                imax = round(float(source.readline().rstrip().split()[2]),
+                             round_digits)
                 itie = IntervalTier(inam)
                 for j in range(int(source.readline().rstrip().split()[3])):
                     source.readline().rstrip().split() # header junk
-                    jmin = round(float(source.readline().rstrip().split()[2]), 5)
-                    jmax = round(float(source.readline().rstrip().split()[2]), 5)
+                    jmin = round(float(source.readline().rstrip().split()[2]),
+                                 round_digits)
+                    jmax = round(float(source.readline().rstrip().split()[2]),
+                                 round_digits)
                     jmrk = _getMark(source)
                     if jmin < jmax: # non-null
                         itie.addInterval(Interval(jmin, jmax, jmrk))
                 self.append(itie)
             else: # pointTier
                 inam = source.readline().rstrip().split(' = ')[1].strip('"')
-                imin = round(float(source.readline().rstrip().split()[2]), 5)
-                imax = round(float(source.readline().rstrip().split()[2]), 5)
+                imin = round(float(source.readline().rstrip().split()[2]),
+                             round_digits)
+                imax = round(float(source.readline().rstrip().split()[2]),
+                             round_digits)
                 itie = PointTier(inam)
                 n = int(source.readline().rstrip().split()[3])
                 for j in range(n):
                     source.readline().rstrip() # header junk
                     jtim = round(float(source.readline().rstrip().split()[2]),
-                                                                           5)
+                                 round_digits)
                     jmrk = _getMark(source)
                     itie.addPoint(Point(jtim, jmrk))
                 self.append(itie)
