@@ -36,6 +36,7 @@ import os.path
 from sys import stderr
 from bisect import bisect_left
 
+DEFAULT_PRECISION = 15    # for rounding times while reading files
 
 def _getMark(text):
     """
@@ -598,14 +599,14 @@ class TextGrid(object):
         """
         return (self.tiers.pop(i) if i else self.tiers.pop())
 
-    def read(self, f):
+    def read(self, f, round_digits=DEFAULT_PRECISION):
         """
-        Read the tiers contained in the Praat-formated TextGrid file
-        indicated by string f
+        Read the tiers contained in the Praat-formatted TextGrid file
+        indicated by string f. Times are rounded to the specified precision.
         """
         source = readFile(f)
-        self.minTime = round(float(source.readline().split()[2]), 5)
-        self.maxTime = round(float(source.readline().split()[2]), 5)
+        self.minTime = round(float(source.readline().split()[2]), round_digits)
+        self.maxTime = round(float(source.readline().split()[2]), round_digits)
         source.readline() # more header junk
         m = int(source.readline().rstrip().split()[2]) # will be self.n
         source.readline()
@@ -613,27 +614,33 @@ class TextGrid(object):
             source.readline()
             if source.readline().rstrip().split()[2] == '"IntervalTier"':
                 inam = source.readline().rstrip().split(' = ')[1].strip('"')
-                imin = round(float(source.readline().rstrip().split()[2]), 5)
-                imax = round(float(source.readline().rstrip().split()[2]), 5)
+                imin = round(float(source.readline().rstrip().split()[2]),
+                             round_digits)
+                imax = round(float(source.readline().rstrip().split()[2]),
+                             round_digits)
                 itie = IntervalTier(inam)
                 for j in range(int(source.readline().rstrip().split()[3])):
                     source.readline().rstrip().split() # header junk
-                    jmin = round(float(source.readline().rstrip().split()[2]), 5)
-                    jmax = round(float(source.readline().rstrip().split()[2]), 5)
+                    jmin = round(float(source.readline().rstrip().split()[2]),
+                                 round_digits)
+                    jmax = round(float(source.readline().rstrip().split()[2]),
+                                 round_digits)
                     jmrk = _getMark(source)
                     if jmin < jmax: # non-null
                         itie.addInterval(Interval(jmin, jmax, jmrk))
                 self.append(itie)
             else: # pointTier
                 inam = source.readline().rstrip().split(' = ')[1].strip('"')
-                imin = round(float(source.readline().rstrip().split()[2]), 5)
-                imax = round(float(source.readline().rstrip().split()[2]), 5)
+                imin = round(float(source.readline().rstrip().split()[2]),
+                             round_digits)
+                imax = round(float(source.readline().rstrip().split()[2]),
+                             round_digits)
                 itie = PointTier(inam)
                 n = int(source.readline().rstrip().split()[3])
                 for j in range(n):
                     source.readline().rstrip() # header junk
                     jtim = round(float(source.readline().rstrip().split()[2]),
-                                                                           5)
+                                 round_digits)
                     jmrk = _getMark(source)
                     itie.addPoint(Point(jtim, jmrk))
                 self.append(itie)
@@ -731,7 +738,7 @@ class MLF(object):
         """
         return self.grids[i]
 
-    def read(self, f, samplerate):
+    def read(self, f, samplerate, round_digits=DEFAULT_PRECISION):
         source = open(f, 'r') # HTK returns ostensible ASCII
         samplerate = float(samplerate)
         source.readline() # header
@@ -748,8 +755,8 @@ class MLF(object):
                 while 1: # loop over the lines in each grid
                     line = source.readline().rstrip().split()
                     if len(line) == 4: # word on this baby
-                        pmin = round(float(line[0]) / samplerate, 5)
-                        pmax = round(float(line[1]) / samplerate, 5)
+                        pmin = round(float(line[0]) / samplerate, round_digits)
+                        pmax = round(float(line[1]) / samplerate, round_digits)
                         if pmin == pmax:
                             raise ValueError('null duration interval')
                         phon.add(pmin, pmax, line[2])
@@ -759,8 +766,8 @@ class MLF(object):
                         wsrt = pmin
                         wend = pmax
                     elif len(line) == 3: # just phone
-                        pmin = round(float(line[0]) / samplerate, 5)
-                        pmax = round(float(line[1]) / samplerate, 5)
+                        pmin = round(float(line[0]) / samplerate, round_digits)
+                        pmax = round(float(line[1]) / samplerate, round_digits)
                         if line[2] == 'sp' and pmin != pmax:
                             if wmrk:
                                 word.add(wsrt, wend, wmrk)
