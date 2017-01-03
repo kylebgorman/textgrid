@@ -170,7 +170,7 @@ class Interval(object):
     """
 
     def __init__(self, minTime, maxTime, mark):
-        if minTime > maxTime: # not an actual interval
+        if minTime >= maxTime: # not an actual interval
             raise ValueError(minTime, maxTime)
         self.minTime = minTime
         self.maxTime = maxTime

@@ -372,6 +372,8 @@ class TestIntervalTier(unittest.TestCase):
         self.foo.add(2.0, 2.5, 'baz')
         
         self.assertEqual(repr(self.foo), 'IntervalTier(foo, [Interval(0.0, 2.0, bar), Interval(2.0, 2.5, baz)])')
+
+        self.assertRaises(ValueError, self.foo.add, 2.5, 2.5, 'bar')
         
     def test_remove(self):
         self.foo.add(0.0, 2.0, 'bar')
