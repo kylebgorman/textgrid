@@ -1,6 +1,6 @@
 #!/usr/bin/env python -O
 #
-# Copyright (c) 2011-2013 Kyle Gorman, Max Bane, Morgan Sonderegger
+# Copyright (c) 2011-2016 Kyle Gorman, Max Bane, Morgan Sonderegger
 #
 # Permission is hereby granted, free of charge, to any person obtaining a
 # copy of this software and associated documentation files (the
@@ -36,8 +36,10 @@ import os.path
 from sys import stderr
 from bisect import bisect_left
 
+
 DEFAULT_TEXTGRID_PRECISION = 15
 DEFAULT_MLF_PRECISION = 5
+
 
 def _getMark(text):
     """
