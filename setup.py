@@ -2,9 +2,9 @@ from setuptools import setup
 
 setup(
     name='TextGrid',
-    version='1.0',
+    version='1.1',
     author='Kyle Gorman et al.',
-    author_email='gormanky@ohsu.edu',
+    author_email='kylebgorman@gmail.com',
     packages=['textgrid'],
     test_suite='tests',
     description='Praat TextGrid manipulation.'
