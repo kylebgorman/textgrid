@@ -1,1 +1,1 @@
-from .textgrid import TextGrid, MLF, IntervalTier, PointTier
+from .textgrid import TextGrid, MLF, IntervalTier, PointTier, Interval, Point
