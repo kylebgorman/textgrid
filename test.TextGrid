@@ -1,0 +1,34 @@
+File type = "ooTextFile"
+Object class = "TextGrid"
+
+xmin = 0 
+xmax = 1 
+tiers? <exists> 
+size = 2 
+item []: 
+    item [1]:
+        class = "IntervalTier" 
+        name = "words" 
+        xmin = 0 
+        xmax = 1 
+        intervals: size = 2 
+        intervals [1]:
+            xmin = 0 
+            xmax = 0.5 
+            text = """Is anyone home?""" 
+        intervals [2]:
+            xmin = 0.5 
+            xmax = 1 
+            text = "asked ""Pat""" 
+    item [2]:
+        class = "TextTier" 
+        name = "points" 
+        xmin = 0 
+        xmax = 1 
+        points: size = 2 
+        points [1]:
+            number = 0.25 
+            mark = """event""" 
+        points [2]:
+            number = 0.75 
+            mark = """event"" with quotes again" 
