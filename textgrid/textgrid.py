@@ -70,25 +70,28 @@ def _getMark(text):
 def _formatMark(text):
     return text.replace('"', '""')
 
-def readFile(f):
+def detectEncoding(f):
     """
-    This helper method returns an appropriate file handle given a path f.
+    This helper method returns the file encoding corresponding to path f.
     This handles UTF-8, which is itself an ASCII extension, so also ASCII.
     """
+    encoding = 'ascii'
     try:
-        source = codecs.open(f, 'r', encoding='utf-16')
-        source.readline() # Read one line to ensure correct encoding
+        with codecs.open(f, 'r', encoding='utf-16') as source:
+            source.readline() # Read one line to ensure correct encoding
     except UnicodeError:
         try:
-            source = codecs.open(f, 'r', encoding='utf-8')
-            source.readline() # Read one line to ensure correct encoding
+            with codecs.open(f, 'r', encoding='utf-8') as source:
+                source.readline() # Read one line to ensure correct encoding
         except UnicodeError:
-            source = codecs.open(f, 'r')
-            source.readline() # Read one line to ensure correct encoding
-    source.readline() # header junk
-    source.readline() # header junk
+            with codecs.open(f, 'r', encoding='ascii') as source:
+                source.readline() # Read one line to ensure correct encoding
+        else:
+            encoding = 'utf-8'
+    else:
+        encoding = 'utf-16'
 
-    return source
+    return encoding
 
 
 class Point(object):
@@ -335,21 +338,26 @@ class PointTier(object):
         Read the Points contained in the Praat-formated PointTier/TextTier
         file indicated by string f
         """
-        source = readFile(f)
-        self.minTime = float(source.readline().split()[2])
-        self.maxTime = float(source.readline().split()[2])
-        for i in range(int(source.readline().rstrip().split()[3])):
-            source.readline().rstrip() # header
-            itim = float(source.readline().rstrip().split()[2])
-            imrk = _getMark(source)
-            self.points.append(Point(itim, imrk))
+        encoding = detectEncoding(f)
+        with codecs.open(f, 'r', encoding=encoding) as source:
+            source.readline() # header junk
+            source.readline() # header junk
+            source.readline() # header junk
+
+            self.minTime = float(source.readline().split()[2])
+            self.maxTime = float(source.readline().split()[2])
+            for i in range(int(source.readline().rstrip().split()[3])):
+                source.readline().rstrip() # header
+                itim = float(source.readline().rstrip().split()[2])
+                imrk = _getMark(source)
+                self.points.append(Point(itim, imrk))
 
     def write(self, f):
         """
         Write the current state into a Praat-format PointTier/TextTier
         file. f may be a file object to write to, or a string naming a
         path for writing
-        """
+       """
         sink = f if hasattr(f, 'write') else codecs.open(f, 'w', 'UTF-8')
         print('File type = "ooTextFile"', file=sink)
         print('Object class = "TextTier"\n', file=sink)
@@ -454,16 +462,20 @@ class IntervalTier(object):
         Read the Intervals contained in the Praat-formated IntervalTier
         file indicated by string f
         """
-        source = readFile(f)
-        self.minTime = float(source.readline().split()[2])
-        self.maxTime = float(source.readline().split()[2])
-        for i in range(int(source.readline().rstrip().split()[3])):
-            source.readline().rstrip() # header
-            imin = float(source.readline().rstrip().split()[2])
-            imax = float(source.readline().rstrip().split()[2])
-            imrk = _getMark(source)
-            self.intervals.append(Interval(imin, imax, imrk))
-        source.close()
+        encoding = detectEncoding(f)
+        with codecs.open(f, 'r', encoding=encoding) as source:
+            source.readline() # header junk
+            source.readline() # header junk
+            source.readline() # header junk
+
+            self.minTime = float(source.readline().split()[2])
+            self.maxTime = float(source.readline().split()[2])
+            for i in range(int(source.readline().rstrip().split()[3])):
+                source.readline().rstrip() # header
+                imin = float(source.readline().rstrip().split()[2])
+                imax = float(source.readline().rstrip().split()[2])
+                imrk = _getMark(source)
+                self.intervals.append(Interval(imin, imax, imrk))
 
     def _fillInTheGaps(self, null):
         """
@@ -608,47 +620,51 @@ class TextGrid(object):
         Read the tiers contained in the Praat-formatted TextGrid file
         indicated by string f. Times are rounded to the specified precision.
         """
-        source = readFile(f)
-        self.minTime = round(float(source.readline().split()[2]), round_digits)
-        self.maxTime = round(float(source.readline().split()[2]), round_digits)
-        source.readline() # more header junk
-        m = int(source.readline().rstrip().split()[2]) # will be self.n
-        source.readline()
-        for i in range(m): # loop over grids
+        encoding = detectEncoding(f)
+        with codecs.open(f, 'r', encoding=encoding) as source:
+            source.readline() # header junk
+            source.readline() # header junk
+            source.readline() # header junk
+
+            self.minTime = round(float(source.readline().split()[2]), round_digits)
+            self.maxTime = round(float(source.readline().split()[2]), round_digits)
+            source.readline() # more header junk
+            m = int(source.readline().rstrip().split()[2]) # will be self.n
             source.readline()
-            if source.readline().rstrip().split()[2] == '"IntervalTier"':
-                inam = source.readline().rstrip().split(' = ')[1].strip('"')
-                imin = round(float(source.readline().rstrip().split()[2]),
-                             round_digits)
-                imax = round(float(source.readline().rstrip().split()[2]),
-                             round_digits)
-                itie = IntervalTier(inam)
-                for j in range(int(source.readline().rstrip().split()[3])):
-                    source.readline().rstrip().split() # header junk
-                    jmin = round(float(source.readline().rstrip().split()[2]),
+            for i in range(m): # loop over grids
+                source.readline()
+                if source.readline().rstrip().split()[2] == '"IntervalTier"':
+                    inam = source.readline().rstrip().split(' = ')[1].strip('"')
+                    imin = round(float(source.readline().rstrip().split()[2]),
                                  round_digits)
-                    jmax = round(float(source.readline().rstrip().split()[2]),
+                    imax = round(float(source.readline().rstrip().split()[2]),
                                  round_digits)
-                    jmrk = _getMark(source)
-                    if jmin < jmax: # non-null
-                        itie.addInterval(Interval(jmin, jmax, jmrk))
-                self.append(itie)
-            else: # pointTier
-                inam = source.readline().rstrip().split(' = ')[1].strip('"')
-                imin = round(float(source.readline().rstrip().split()[2]),
-                             round_digits)
-                imax = round(float(source.readline().rstrip().split()[2]),
-                             round_digits)
-                itie = PointTier(inam)
-                n = int(source.readline().rstrip().split()[3])
-                for j in range(n):
-                    source.readline().rstrip() # header junk
-                    jtim = round(float(source.readline().rstrip().split()[2]),
+                    itie = IntervalTier(inam)
+                    for j in range(int(source.readline().rstrip().split()[3])):
+                        source.readline().rstrip().split() # header junk
+                        jmin = round(float(source.readline().rstrip().split()[2]),
+                                     round_digits)
+                        jmax = round(float(source.readline().rstrip().split()[2]),
+                                     round_digits)
+                        jmrk = _getMark(source)
+                        if jmin < jmax: # non-null
+                            itie.addInterval(Interval(jmin, jmax, jmrk))
+                    self.append(itie)
+                else: # pointTier
+                    inam = source.readline().rstrip().split(' = ')[1].strip('"')
+                    imin = round(float(source.readline().rstrip().split()[2]),
                                  round_digits)
-                    jmrk = _getMark(source)
-                    itie.addPoint(Point(jtim, jmrk))
-                self.append(itie)
-        source.close()
+                    imax = round(float(source.readline().rstrip().split()[2]),
+                                 round_digits)
+                    itie = PointTier(inam)
+                    n = int(source.readline().rstrip().split()[3])
+                    for j in range(n):
+                        source.readline().rstrip() # header junk
+                        jtim = round(float(source.readline().rstrip().split()[2]),
+                                     round_digits)
+                        jmrk = _getMark(source)
+                        itie.addPoint(Point(jtim, jmrk))
+                    self.append(itie)
 
     def write(self, f, null=''):
         """
