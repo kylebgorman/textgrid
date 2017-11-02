@@ -2,7 +2,7 @@ from setuptools import setup
 
 setup(
     name='TextGrid',
-    version='1.1',
+    version='1.2',
     author='Kyle Gorman et al.',
     author_email='kylebgorman@gmail.com',
     packages=['textgrid'],
