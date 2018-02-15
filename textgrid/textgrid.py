@@ -189,7 +189,7 @@ class Interval(object):
         self.minTime = minTime
         self.maxTime = maxTime
         self.mark = mark
-        self.strict =True
+        self.strict = True
 
     def __repr__(self):
         return 'Interval({0}, {1}, {2})'.format(self.minTime, self.maxTime,
@@ -580,7 +580,7 @@ class TextGrid(object):
 
     """
 
-    def __init__(self, name=None, minTime=0., maxTime=None, strict = True):
+    def __init__(self, name=None, minTime=0., maxTime=None, strict=True):
         """
         Construct a TextGrid instance with the given (optional) name
         (which is only relevant for MLF stuff). If file is given, it is a
