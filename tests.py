@@ -284,7 +284,7 @@ This latter line shouldn't be pulled in at all.
 
         source = StringIO(some_text)
 
-        self.assertEqual(textgrid.textgrid._getMark(source), """This is an annoying, but
+        self.assertEqual(textgrid.textgrid._getMark(source, False), """This is an annoying, but
 not technically ill-formed
 line.""")
 
@@ -296,7 +296,7 @@ This latter line shouldn't be pulled in at all.
 '''
         source = StringIO(multiline_text_with_quotes)
     
-        self.assertEqual(textgrid.textgrid._getMark(source), """This is an "annoying", "but"
+        self.assertEqual(textgrid.textgrid._getMark(source, False), """This is an "annoying", "but"
 not "technically" ill-formed
 line.""")
 
@@ -449,6 +449,34 @@ class TestTextGrid(unittest.TestCase):
 
     def test_get_names(self):
         self.assertListEqual(self.foo.getNames(), ['bar', 'baz', 'bar'])
+
+class TestReadTextGrid(unittest.TestCase):
+    @classmethod
+    def setUpClass(cls):
+        import os
+        base_dir = os.path.dirname(os.path.abspath(__file__))
+        cls.short_textgrid_path = os.path.join(base_dir, 'tests', 'data', 'short_format.TextGrid')
+        cls.long_textgrid_path = os.path.join(base_dir, 'tests', 'data', 'long_format.TextGrid')
+
+    def test_read_short(self):
+        tg = textgrid.TextGrid()
+        tg.read(self.short_textgrid_path)
+        assert tg.tiers[0].name == 'phone'
+        assert tg.tiers[1].name == 'word'
+        assert tg.tiers[0][0].mark == 'sil'
+        assert abs(tg.tiers[0][0].minTime - 1358.8925) < 0.01
+        assert abs(tg.tiers[0][0].maxTime - 1361.8925) < 0.01
+
+    def test_read_long(self):
+        tg = textgrid.TextGrid()
+        tg.read(self.long_textgrid_path)
+        assert tg.tiers[0].name == 'phone'
+        assert tg.tiers[1].name == 'word'
+        assert tg.tiers[0][0].mark == 'sil'
+        assert abs(tg.tiers[0][0].minTime - 1358.8925) < 0.01
+        assert abs(tg.tiers[0][0].maxTime - 1361.8925) < 0.01
+
+
 
 
 if __name__ == '__main__':
