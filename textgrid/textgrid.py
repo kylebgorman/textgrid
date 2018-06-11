@@ -87,13 +87,13 @@ def detectEncoding(f):
             source.readline()  # Read one line to ensure correct encoding
     except UnicodeError:
         try:
-            with codecs.open(f, 'r', encoding='utf-8') as source:
+            with codecs.open(f, 'r', encoding='utf-8-sig') as source: #revised utf-8 to utf-8-sig for utf-8 with byte order mark (BOM)  
                 source.readline()  # Read one line to ensure correct encoding
         except UnicodeError:
             with codecs.open(f, 'r', encoding='ascii') as source:
                 source.readline()  # Read one line to ensure correct encoding
         else:
-            encoding = 'utf-8'
+            encoding = 'utf-8-sig' #revised utf-8 to utf-8-sig for utf-8 with byte order mark (BOM) 
     else:
         encoding = 'utf-16'
 
