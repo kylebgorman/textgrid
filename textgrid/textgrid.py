@@ -658,12 +658,13 @@ class TextGrid(object):
         """
         return (self.tiers.pop(i) if i else self.tiers.pop())
 
-    def read(self, f, round_digits=DEFAULT_TEXTGRID_PRECISION):
+    def read(self, f, round_digits=DEFAULT_TEXTGRID_PRECISION, encoding=None):
         """
         Read the tiers contained in the Praat-formatted TextGrid file
         indicated by string f. Times are rounded to the specified precision.
         """
-        encoding = detectEncoding(f)
+        if encoding is None:
+            encoding = detectEncoding(f)
         with codecs.open(f, 'r', encoding=encoding) as source:
             file_type, short = parse_header(source)
             if file_type != 'TextGrid':
