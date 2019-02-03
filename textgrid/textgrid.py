@@ -87,13 +87,13 @@ def detectEncoding(f):
             source.readline()  # Read one line to ensure correct encoding
     except UnicodeError:
         try:
-            with codecs.open(f, 'r', encoding='utf-8-sig') as source: #revised utf-8 to utf-8-sig for utf-8 with byte order mark (BOM)  
+            with codecs.open(f, 'r', encoding='utf-8-sig') as source: #revised utf-8 to utf-8-sig for utf-8 with byte order mark (BOM)
                 source.readline()  # Read one line to ensure correct encoding
         except UnicodeError:
             with codecs.open(f, 'r', encoding='ascii') as source:
                 source.readline()  # Read one line to ensure correct encoding
         else:
-            encoding = 'utf-8-sig' #revised utf-8 to utf-8-sig for utf-8 with byte order mark (BOM) 
+            encoding = 'utf-8-sig' #revised utf-8 to utf-8-sig for utf-8 with byte order mark (BOM)
     else:
         encoding = 'utf-16'
 
@@ -361,25 +361,39 @@ class PointTier(object):
                 imrk = _getMark(source, short)
                 self.points.append(Point(itim, imrk))
 
-    def write(self, f):
+    def write(self, f, short=False):
         """
         Write the current state into a Praat-format PointTier/TextTier
         file. f may be a file object to write to, or a string naming a
         path for writing
        """
         sink = f if hasattr(f, 'write') else codecs.open(f, 'w', 'UTF-8')
-        print('File type = "ooTextFile"', file=sink)
-        print('Object class = "TextTier"\n', file=sink)
-
-        print('xmin = {0}'.format(self.minTime), file=sink)
-        print('xmax = {0}'.format(self.maxTime if self.maxTime \
-                                      else self.points[-1].time), file=sink)
-        print('points: size = {0}'.format(len(self)), file=sink)
+        if short:
+            print('"ooTextFile"', file=sink)
+            print('"TextTier"\n', file=sink)
+            print('{0}'.format(self.minTime), file=sink)
+            print('{0}'.format(self.maxTime if self.maxTime \
+                                          else self.points[-1].time), file=sink)
+            print('{0}'.format(len(self)), file=sink)
+        else:
+            print('File type = "ooTextFile"', file=sink)
+            print('Object class = "TextTier"\n', file=sink)
+            print('xmin = {0}'.format(self.minTime), file=sink)
+            print('xmax = {0}'.format(self.maxTime if self.maxTime \
+                                          else self.points[-1].time), file=sink)
+            print('points: size = {0}'.format(len(self)), file=sink)
         for (i, point) in enumerate(self.points, 1):
-            print('points [{0}]:'.format(i), file=sink)
-            print('\ttime = {0}'.format(point.time), file=sink)
+            if not short:
+                print('points [{0}]:'.format(i), file=sink)
+            if short:
+                print('{0}'.format(point.time), file=sink)
+            else:
+                print('\ttime = {0}'.format(point.time), file=sink)
             mark = _formatMark(point.mark)
-            print('\tmark = "{0}"'.format(mark), file=sink)
+            if short:
+                print('"{0}"'.format(mark), file=sink)
+            else:
+                print('\tmark = "{0}"'.format(mark), file=sink)
         sink.close()
 
     def bounds(self):
@@ -507,28 +521,46 @@ class IntervalTier(object):
             output.append(Interval(prev_t, self.maxTime, null))
         return output
 
-    def write(self, f, null=''):
+    def write(self, f, null='', short=False):
         """
         Write the current state into a Praat-format IntervalTier file. f
         may be a file object to write to, or a string naming a path for
         writing
         """
         sink = f if hasattr(f, 'write') else open(f, 'w')
-        print('File type = "ooTextFile"', file=sink)
-        print('Object class = "IntervalTier"\n', file=sink)
-        print('xmin = {0}'.format(self.minTime), file=sink)
-        print('xmax = {0}'.format(self.maxTime if self.maxTime \
-                                      else self.intervals[-1].maxTime), file=sink)
+        if short:
+            print('"ooTextFile"', file=sink)
+            print('"IntervalTier"\n', file=sink)
+            print('{0}'.format(self.minTime), file=sink)
+            print('{0}'.format(self.maxTime if self.maxTime \
+                                          else self.intervals[-1].maxTime), file=sink)
+        else:
+            print('File type = "ooTextFile"', file=sink)
+            print('Object class = "IntervalTier"\n', file=sink)
+            print('xmin = {0}'.format(self.minTime), file=sink)
+            print('xmax = {0}'.format(self.maxTime if self.maxTime \
+                                          else self.intervals[-1].maxTime), file=sink)
         # compute the number of intervals and make the empty ones
         output = self._fillInTheGaps(null)
         # write it all out
-        print('intervals: size = {0}'.format(len(output)), file=sink)
+        if short:
+            print('{0}'.format(len(output)), file=sink)
+        else:
+            print('intervals: size = {0}'.format(len(output)), file=sink)
         for (i, interval) in enumerate(output, 1):
-            print('intervals [{0}]'.format(i), file=sink)
-            print('\txmin = {0}'.format(interval.minTime), file=sink)
-            print('\txmax = {0}'.format(interval.maxTime), file=sink)
+            if not short:
+                print('intervals [{0}]'.format(i), file=sink)
+            if short:
+                print('{0}'.format(interval.minTime), file=sink)
+                print('{0}'.format(interval.maxTime), file=sink)
+            else:
+                print('\txmin = {0}'.format(interval.minTime), file=sink)
+                print('\txmax = {0}'.format(interval.maxTime), file=sink)
             mark = _formatMark(interval.mark)
-            print('\ttext = "{0}"'.format(mark), file=sink)
+            if short:
+                print('"{0}"'.format(mark), file=sink)
+            else:
+                print('\ttext = "{0}"'.format(mark), file=sink)
         sink.close()
 
     def bounds(self):
@@ -710,7 +742,7 @@ class TextGrid(object):
                         itie.addPoint(Point(jtim, jmrk))
                     self.append(itie)
 
-    def write(self, f, null=''):
+    def write(self, f, null='', short=False):
         """
         Write the current state into a Praat-format TextGrid file. f may
         be a file object to write to, or a string naming a path to open
@@ -719,46 +751,87 @@ class TextGrid(object):
         sink = f if hasattr(f, 'write') else codecs.open(f, 'w', 'UTF-8')
         print('File type = "ooTextFile"', file=sink)
         print('Object class = "TextGrid"\n', file=sink)
-        print('xmin = {0}'.format(self.minTime), file=sink)
+        if short:
+            print('{0}'.format(self.minTime), file=sink)
+        else:
+            print('xmin = {0}'.format(self.minTime), file=sink)
         # compute max time
         maxT = self.maxTime
         if not maxT:
             maxT = max([t.maxTime if t.maxTime else t[-1].maxTime \
                         for t in self.tiers])
-        print('xmax = {0}'.format(maxT), file=sink)
-        print('tiers? <exists>', file=sink)
-        print('size = {0}'.format(len(self)), file=sink)
-        print('item []:', file=sink)
+        if short:
+            print('{0}'.format(maxT), file=sink)
+            print('<exists>', file=sink)
+            print('{0}'.format(len(self)), file=sink)
+        else:
+            print('xmax = {0}'.format(maxT), file=sink)
+            print('tiers? <exists>', file=sink)
+            print('size = {0}'.format(len(self)), file=sink)
+        if not short:
+            print('item []:', file=sink)
         for (i, tier) in enumerate(self.tiers, 1):
-            print('\titem [{0}]:'.format(i), file=sink)
+            if not short:
+                print('\titem [{0}]:'.format(i), file=sink)
             if tier.__class__ == IntervalTier:
-                print('\t\tclass = "IntervalTier"', file=sink)
-                print('\t\tname = "{0}"'.format(tier.name), file=sink)
-                print('\t\txmin = {0}'.format(tier.minTime), file=sink)
-                print('\t\txmax = {0}'.format(maxT), file=sink)
+                if short:
+                    print('"IntervalTier"', file=sink)
+                    print('"{0}"'.format(tier.name), file=sink)
+                    print('{0}'.format(tier.minTime), file=sink)
+                    print('{0}'.format(maxT), file=sink)
+                else:
+                    print('\t\tclass = "IntervalTier"', file=sink)
+                    print('\t\tname = "{0}"'.format(tier.name), file=sink)
+                    print('\t\txmin = {0}'.format(tier.minTime), file=sink)
+                    print('\t\txmax = {0}'.format(maxT), file=sink)
                 # compute the number of intervals and make the empty ones
                 output = tier._fillInTheGaps(null)
-                print('\t\tintervals: size = {0}'.format(
-                    len(output)), file=sink)
+                if short:
+                    print('{0}'.format(len(output)), file=sink)
+                else:
+                    print('\t\tintervals: size = {0}'.format(
+                        len(output)), file=sink)
                 for (j, interval) in enumerate(output, 1):
-                    print('\t\t\tintervals [{0}]:'.format(j), file=sink)
-                    print('\t\t\t\txmin = {0}'.format(
-                        interval.minTime), file=sink)
-                    print('\t\t\t\txmax = {0}'.format(
-                        interval.maxTime), file=sink)
+                    if not short:
+                        print('\t\t\tintervals [{0}]:'.format(j), file=sink)
+                    if short:
+                        print('{0}'.format(interval.minTime), file=sink)
+                        print('{0}'.format(interval.maxTime), file=sink)
+                    else:
+                        print('\t\t\t\txmin = {0}'.format(
+                            interval.minTime), file=sink)
+                        print('\t\t\t\txmax = {0}'.format(
+                            interval.maxTime), file=sink)
                     mark = _formatMark(interval.mark)
-                    print('\t\t\t\ttext = "{0}"'.format(mark), file=sink)
+                    if short:
+                        print('"{0}"'.format(mark), file=sink)
+                    else:
+                        print('\t\t\t\ttext = "{0}"'.format(mark), file=sink)
             elif tier.__class__ == PointTier:  # PointTier
-                print('\t\tclass = "TextTier"', file=sink)
-                print('\t\tname = "{0}"'.format(tier.name), file=sink)
-                print('\t\txmin = {0}'.format(tier.minTime), file=sink)
-                print('\t\txmax = {0}'.format(maxT), file=sink)
-                print('\t\tpoints: size = {0}'.format(len(tier)), file=sink)
+                if short:
+                    print('"TextTier"', file=sink)
+                    print('"{0}"'.format(tier.name), file=sink)
+                    print('{0}'.format(tier.minTime), file=sink)
+                    print('{0}'.format(maxT), file=sink)
+                    print('{0}'.format(len(tier)), file=sink)
+                else:
+                    print('\t\tclass = "TextTier"', file=sink)
+                    print('\t\tname = "{0}"'.format(tier.name), file=sink)
+                    print('\t\txmin = {0}'.format(tier.minTime), file=sink)
+                    print('\t\txmax = {0}'.format(maxT), file=sink)
+                    print('\t\tpoints: size = {0}'.format(len(tier)), file=sink)
                 for (k, point) in enumerate(tier, 1):
-                    print('\t\t\tpoints [{0}]:'.format(k), file=sink)
-                    print('\t\t\t\ttime = {0}'.format(point.time), file=sink)
+                    if not short:
+                        print('\t\t\tpoints [{0}]:'.format(k), file=sink)
+                    if short:
+                        print('{0}'.format(point.time), file=sink)
+                    else:
+                        print('\t\t\t\ttime = {0}'.format(point.time), file=sink)
                     mark = _formatMark(point.mark)
-                    print('\t\t\t\tmark = "{0}"'.format(mark), file=sink)
+                    if short:
+                        print('"{0}"'.format(mark), file=sink)
+                    else:
+                        print('\t\t\t\tmark = "{0}"'.format(mark), file=sink)
         sink.close()
 
     # alternative constructor
