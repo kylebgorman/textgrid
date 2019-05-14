@@ -205,6 +205,10 @@ class Interval(object):
         if hasattr(other, 'minTime'):
             if self.strict and self.overlaps(other):
                 raise (ValueError(self, other))
+            elif self.overlaps(other):
+                print("Overlap for interval: {} {}".format(self.mark,
+                            (float(self.minTime), float(self.maxTime))))
+                return self.minTime < other.minTime
             return self.minTime < other.minTime
         elif hasattr(other, 'time'):
             return self.maxTime < other.time
@@ -215,6 +219,10 @@ class Interval(object):
         if hasattr(other, 'maxTime'):
             if self.strict and self.overlaps(other):
                 raise (ValueError(self, other))
+            elif self.overlaps(other):
+                print("Overlap for interval: {} {}".format(self.mark,
+                            (float(self.minTime), float(self.maxTime))))
+                return self.minTime < other.minTime
             return self.maxTime > other.maxTime
         elif hasattr(other, 'time'):
             return self.minTime > other.time
@@ -229,10 +237,14 @@ class Interval(object):
 
     def __cmp__(self, other):
         if hasattr(other, 'minTime') and hasattr(other, 'maxTime'):
-            if self.overlaps(other):
+            if self.strict and self.overlaps(other):
                 raise ValueError(self, other)
                 # this returns the two intervals, so user can patch things
                 # up if s/he so chooses
+            elif self.overlaps(other):
+                print("Overlap for interval: {} {}".format(self.mark,
+                            (float(self.minTime), float(self.maxTime))))
+                return cmp(self.minTime, other.minTime)
             return cmp(self.minTime, other.minTime)
         elif hasattr(other, 'time'):  # comparing Intervals and Points
             return cmp(self.minTime, other.time) + \
