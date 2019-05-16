@@ -32,6 +32,7 @@ from __future__ import print_function
 import re
 import codecs
 import os.path
+import logging
 
 from sys import stderr
 from bisect import bisect_left
@@ -206,7 +207,7 @@ class Interval(object):
             if self.strict and self.overlaps(other):
                 raise (ValueError(self, other))
             elif self.overlaps(other):
-                print("Overlap for interval: {} {}".format(self.mark,
+                logging.warning("Overlap for interval: {} {}".format(self.mark,
                             (float(self.minTime), float(self.maxTime))))
                 return self.minTime < other.minTime
             return self.minTime < other.minTime
@@ -220,7 +221,7 @@ class Interval(object):
             if self.strict and self.overlaps(other):
                 raise (ValueError(self, other))
             elif self.overlaps(other):
-                print("Overlap for interval: {} {}".format(self.mark,
+                logging.warning("Overlap for interval: {} {}".format(self.mark,
                             (float(self.minTime), float(self.maxTime))))
                 return self.minTime < other.minTime
             return self.maxTime > other.maxTime
@@ -242,7 +243,7 @@ class Interval(object):
                 # this returns the two intervals, so user can patch things
                 # up if s/he so chooses
             elif self.overlaps(other):
-                print("Overlap for interval: {} {}".format(self.mark,
+                logging.warning("Overlap for interval: {} {}".format(self.mark,
                             (float(self.minTime), float(self.maxTime))))
                 return cmp(self.minTime, other.minTime)
             return cmp(self.minTime, other.minTime)
