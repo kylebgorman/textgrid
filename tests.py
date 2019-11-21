@@ -392,7 +392,7 @@ class TestIntervalTier(unittest.TestCase):
         self.foo.add(0.0, 1.0, 'bar')
         self.foo.add(2.0, 2.5, 'baz')
         
-        with self.assertRaisesRegexp(ValueError, '\(Interval\(2.0, 2.5, baz\), Interval\(1.0, 3.0, baz\)\)'):
+        with self.assertRaisesRegex(ValueError, r'\(Interval\(2.0, 2.5, baz\), Interval\(1.0, 3.0, baz\)\)'):
             self.foo.add(1.0, 3.0, 'baz')
             
     def test_interval_containing(self):
@@ -400,12 +400,11 @@ class TestIntervalTier(unittest.TestCase):
         self.foo.add(2.0, 2.5, 'baz')
         
         self.assertEqual(repr(self.foo.intervalContaining(2.25)), 'Interval(2.0, 2.5, baz)')
-        
 
     def test_add_too_late(self):
         foo = textgrid.textgrid.IntervalTier('foo', maxTime=3.5)
         
-        with self.assertRaisesRegexp(ValueError, '3.5'):
+        with self.assertRaisesRegex(ValueError, '3.5'):
             foo.add(2.7, 3.7, 'bar')
     
     def test_fill_in_the_gaps(self):

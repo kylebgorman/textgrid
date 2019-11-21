@@ -572,7 +572,7 @@ def parse_line(line, short, to_round):
 
 def parse_header(source):
     header = source.readline()  # header junk
-    m = re.match('File type = "([\w ]+)"', header)
+    m = re.match(r'File type = "([\w ]+)"', header)
     if m is None or not m.groups()[0].startswith('ooTextFile'):
         raise TextGridError('The file could not be parsed as a Praat text file as it is lacking a proper header.')
 
