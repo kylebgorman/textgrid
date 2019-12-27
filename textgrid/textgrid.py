@@ -32,6 +32,7 @@ from __future__ import print_function
 import re
 import codecs
 import os.path
+import logging
 
 from sys import stderr
 from bisect import bisect_left
@@ -205,6 +206,10 @@ class Interval(object):
         if hasattr(other, 'minTime'):
             if self.strict and self.overlaps(other):
                 raise (ValueError(self, other))
+            elif self.overlaps(other):
+                logging.warning("Overlap for interval %s: (%f, %f)",
+                    self.mark, self.minTime, self.maxTime)
+                return self.minTime < other.minTime
             return self.minTime < other.minTime
         elif hasattr(other, 'time'):
             return self.maxTime < other.time
@@ -215,6 +220,10 @@ class Interval(object):
         if hasattr(other, 'maxTime'):
             if self.strict and self.overlaps(other):
                 raise (ValueError(self, other))
+            elif self.overlaps(other):
+                logging.warning("Overlap for interval %s: (%f, %f)",
+                    self.mark, self.minTime, self.maxTime)
+                return self.minTime < other.minTime
             return self.maxTime > other.maxTime
         elif hasattr(other, 'time'):
             return self.minTime > other.time
@@ -229,10 +238,14 @@ class Interval(object):
 
     def __cmp__(self, other):
         if hasattr(other, 'minTime') and hasattr(other, 'maxTime'):
-            if self.overlaps(other):
+            if self.strict and self.overlaps(other):
                 raise ValueError(self, other)
                 # this returns the two intervals, so user can patch things
                 # up if s/he so chooses
+            elif self.overlaps(other):
+                logging.warning("Overlap for interval %s: (%f, %f)",
+                    self.mark, self.minTime, self.maxTime)
+                return cmp(self.minTime, other.minTime)
             return cmp(self.minTime, other.minTime)
         elif hasattr(other, 'time'):  # comparing Intervals and Points
             return cmp(self.minTime, other.time) + \
@@ -559,7 +572,7 @@ def parse_line(line, short, to_round):
 
 def parse_header(source):
     header = source.readline()  # header junk
-    m = re.match('File type = "([\w ]+)"', header)
+    m = re.match(r'File type = "([\w ]+)"', header)
     if m is None or not m.groups()[0].startswith('ooTextFile'):
         raise TextGridError('The file could not be parsed as a Praat text file as it is lacking a proper header.')
 
@@ -658,12 +671,13 @@ class TextGrid(object):
         """
         return (self.tiers.pop(i) if i else self.tiers.pop())
 
-    def read(self, f, round_digits=DEFAULT_TEXTGRID_PRECISION):
+    def read(self, f, round_digits=DEFAULT_TEXTGRID_PRECISION, encoding=None):
         """
         Read the tiers contained in the Praat-formatted TextGrid file
         indicated by string f. Times are rounded to the specified precision.
         """
-        encoding = detectEncoding(f)
+        if encoding is None:
+            encoding = detectEncoding(f)
         with codecs.open(f, 'r', encoding=encoding) as source:
             file_type, short = parse_header(source)
             if file_type != 'TextGrid':
