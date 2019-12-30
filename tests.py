@@ -342,6 +342,62 @@ class TestIntervalComparison(unittest.TestCase):
         self.assertIn(4.0, self.baz)
 
 
+class TestPointTierComparison(unittest.TestCase):
+
+    @classmethod
+    def setUpClass(cls):
+        foo_point = textgrid.textgrid.Point(3.0, 'foo')
+        bar_point = textgrid.textgrid.Point(4.0, 'bar')
+        baz_interval = textgrid.textgrid.Interval(3.0, 5.0, 'baz')
+
+        cls.foo = textgrid.textgrid.PointTier()
+        cls.bar = textgrid.textgrid.PointTier()
+        cls.bam = textgrid.textgrid.PointTier()
+        cls.baz = textgrid.textgrid.IntervalTier()
+
+        cls.foo.addPoint(foo_point)
+        cls.bar.addPoint(bar_point)
+        cls.bam.addPoint(bar_point)
+        cls.baz.addInterval(baz_interval)
+
+    def test_point_equal(self):
+        self.assertEqual(self.bar, self.bam)
+
+    def test_point_unequal(self):
+        self.assertNotEqual(self.foo, self.bar)
+
+    def test_type_unequal(self):
+        self.assertNotEqual(self.foo, self.baz)
+
+
+class TestIntervalTierComparison(unittest.TestCase):
+
+    @classmethod
+    def setUpClass(cls):
+        foo_point = textgrid.textgrid.Point(3.0, 'foo')
+        baz_interval = textgrid.textgrid.Interval(3.0, 5.0, 'baz')
+        bat_interval = textgrid.textgrid.Interval(5.0, 6.0, 'bar')
+
+        cls.foo = textgrid.textgrid.PointTier()
+        cls.bar = textgrid.textgrid.IntervalTier()
+        cls.baz = textgrid.textgrid.IntervalTier()
+        cls.bat = textgrid.textgrid.IntervalTier()
+
+        cls.foo.addPoint(foo_point)
+        cls.bar.addInterval(baz_interval)
+        cls.baz.addInterval(baz_interval)
+        cls.bat.addInterval(bat_interval)
+
+    def test_interval_equal(self):
+        self.assertEqual(self.bar, self.baz)
+
+    def test_interval_unequal(self):
+        self.assertNotEqual(self.baz, self.bat)
+
+    def test_type_unequal(self):
+        self.assertNotEqual(self.foo, self.baz)
+
+
 class TestPointTier(unittest.TestCase):
 
     def setUp(self):
@@ -448,6 +504,7 @@ class TestTextGrid(unittest.TestCase):
 
     def test_get_names(self):
         self.assertListEqual(self.foo.getNames(), ['bar', 'baz', 'bar'])
+
 
 class TestReadTextGrid(unittest.TestCase):
     @classmethod
