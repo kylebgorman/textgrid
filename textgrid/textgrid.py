@@ -622,6 +622,14 @@ class TextGrid(object):
         self.tiers = []
         self.strict = strict
 
+    def __eq__(self, other):
+        if not hasattr(other, 'tiers'):
+            return False
+        elif all(a == b for a, b in zip(other.tiers, self.tiers)):
+            return True
+        else:
+            return False
+
     def __str__(self):
         return '<TextGrid {0}, {1} Tiers>'.format(self.name, len(self))
 

@@ -398,6 +398,47 @@ class TestIntervalTierComparison(unittest.TestCase):
         self.assertNotEqual(self.foo, self.baz)
 
 
+class TestTextGridComparison(unittest.TestCase):
+
+    @classmethod
+    def setUpClass(cls):
+        foo_point = textgrid.textgrid.Point(3.0, 'foo')
+        bar_interval = textgrid.textgrid.Interval(3.0, 5.0, 'bar')
+        baz_interval = textgrid.textgrid.Interval(5.0, 6.0, 'baz')
+
+        cls.foo_tier = textgrid.textgrid.PointTier()
+        bar_tier = textgrid.textgrid.IntervalTier()
+        baz_tier = textgrid.textgrid.IntervalTier()
+        bat_tier = textgrid.textgrid.IntervalTier()
+
+        cls.foo_tier.addPoint(foo_point)
+        bar_tier.addInterval(bar_interval)
+        baz_tier.addInterval(baz_interval)
+        bat_tier.addInterval(baz_interval)
+
+        cls.foo_grid = textgrid.textgrid.TextGrid()
+        cls.bar_grid = textgrid.textgrid.TextGrid()
+        cls.baz_grid = textgrid.textgrid.TextGrid()
+        cls.bat_grid = textgrid.textgrid.TextGrid()
+
+        cls.foo_grid.append(cls.foo_tier)
+        cls.bar_grid.append(bar_tier)
+        cls.baz_grid.append(baz_tier)
+        cls.bat_grid.append(bat_tier)
+
+    def test_textgrid_equal(self):
+        self.assertEqual(self.baz_grid, self.bat_grid)
+
+    def test_textgrid_unequal_different_intervals(self):
+        self.assertNotEqual(self.bar_grid, self.baz_grid)
+
+    def test_textgrid_unequal_different_tier_types(self):
+        self.assertNotEqual(self.foo_grid, self.bar_grid)
+
+    def test_type_unequal(self):
+        self.assertNotEqual(self.foo_tier, self.foo_grid)
+
+
 class TestPointTier(unittest.TestCase):
 
     def setUp(self):
