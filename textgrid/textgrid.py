@@ -208,7 +208,7 @@ class Interval(object):
                 raise (ValueError(self, other))
             elif self.overlaps(other):
                 logging.warning("Overlap for interval %s: (%f, %f)",
-                    self.mark, self.minTime, self.maxTime)
+                                self.mark, self.minTime, self.maxTime)
                 return self.minTime < other.minTime
             return self.minTime < other.minTime
         elif hasattr(other, 'time'):
@@ -222,7 +222,7 @@ class Interval(object):
                 raise (ValueError(self, other))
             elif self.overlaps(other):
                 logging.warning("Overlap for interval %s: (%f, %f)",
-                    self.mark, self.minTime, self.maxTime)
+                                self.mark, self.minTime, self.maxTime)
                 return self.minTime < other.minTime
             return self.maxTime > other.maxTime
         elif hasattr(other, 'time'):
@@ -244,7 +244,7 @@ class Interval(object):
                 # up if s/he so chooses
             elif self.overlaps(other):
                 logging.warning("Overlap for interval %s: (%f, %f)",
-                    self.mark, self.minTime, self.maxTime)
+                                self.mark, self.minTime, self.maxTime)
                 return cmp(self.minTime, other.minTime)
             return cmp(self.minTime, other.minTime)
         elif hasattr(other, 'time'):  # comparing Intervals and Points
@@ -313,6 +313,12 @@ class PointTier(object):
         self.minTime = minTime
         self.maxTime = maxTime
         self.points = []
+
+    def __eq__(self, other):
+        if not hasattr(other, 'points'):
+            return False
+        else:
+            return all([a == b for a, b in zip(self.points, other.points)])
 
     def __str__(self):
         return '<PointTier {0}, {1} points>'.format(self.name, len(self))
@@ -421,6 +427,12 @@ class IntervalTier(object):
         self.maxTime = maxTime
         self.intervals = []
         self.strict = True
+
+    def __eq__(self, other):
+        if not hasattr(other, 'intervals'):
+            return False
+        else:
+            return all([a == b for a, b in zip(self.intervals, other.intervals)])
 
     def __str__(self):
         return '<IntervalTier {0}, {1} intervals>'.format(self.name,
@@ -545,7 +557,7 @@ class IntervalTier(object):
         sink.close()
 
     def bounds(self):
-        return self.minTime, self.maxTime or self.intervals[-1].maxTime
+        return (self.minTime, self.maxTime or self.intervals[-1].maxTime)
 
     # alternative constructor
 
@@ -579,7 +591,7 @@ def parse_header(source):
     short = 'short' in m.groups()[0]
     file_type = parse_line(source.readline(), short, '')  # header junk
     t = source.readline()  # header junk
-    return file_type, short
+    return (file_type, short)
 
 
 class TextGrid(object):
@@ -605,6 +617,12 @@ class TextGrid(object):
         self.maxTime = maxTime
         self.tiers = []
         self.strict = strict
+
+    def __eq__(self, other):
+        if not hasattr(other, 'tiers'):
+            return False
+        else:
+            return all([a == b for a, b in zip(self.tiers, other.tiers)])
 
     def __str__(self):
         return '<TextGrid {0}, {1} Tiers>'.format(self.name, len(self))
