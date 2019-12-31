@@ -297,7 +297,7 @@ class Interval(object):
             return self.minTime <= other <= self.maxTime
 
     def bounds(self):
-        return self.minTime, self.maxTime
+        return (self.minTime, self.maxTime)
 
 
 class PointTier(object):
@@ -317,10 +317,8 @@ class PointTier(object):
     def __eq__(self, other):
         if not hasattr(other, 'points'):
             return False
-        elif all(a == b for a, b in zip(other.points, self.points)):
-            return True
         else:
-            return False
+            return all([a == b for a, b in zip(self.points, other.points)])
 
     def __str__(self):
         return '<PointTier {0}, {1} points>'.format(self.name, len(self))
@@ -404,7 +402,7 @@ class PointTier(object):
         sink.close()
 
     def bounds(self):
-        return self.minTime, self.maxTime or self.points[-1].time
+        return (self.minTime, self.maxTime or self.points[-1].time)
 
     # alternative constructor
 
@@ -433,10 +431,8 @@ class IntervalTier(object):
     def __eq__(self, other):
         if not hasattr(other, 'intervals'):
             return False
-        elif all(a == b for a, b in zip(other.intervals, self.intervals)):
-            return True
         else:
-            return False
+            return all([a == b for a, b in zip(self.intervals, other.intervals)])
 
     def __str__(self):
         return '<IntervalTier {0}, {1} intervals>'.format(self.name,
@@ -561,7 +557,7 @@ class IntervalTier(object):
         sink.close()
 
     def bounds(self):
-        return self.minTime, self.maxTime or self.intervals[-1].maxTime
+        return (self.minTime, self.maxTime or self.intervals[-1].maxTime)
 
     # alternative constructor
 
@@ -595,7 +591,7 @@ def parse_header(source):
     short = 'short' in m.groups()[0]
     file_type = parse_line(source.readline(), short, '')  # header junk
     t = source.readline()  # header junk
-    return file_type, short
+    return (file_type, short)
 
 
 class TextGrid(object):
@@ -625,10 +621,8 @@ class TextGrid(object):
     def __eq__(self, other):
         if not hasattr(other, 'tiers'):
             return False
-        elif all(a == b for a, b in zip(other.tiers, self.tiers)):
-            return True
         else:
-            return False
+            return all([a == b for a, b in zip(self.tiers, other.tiers)])
 
     def __str__(self):
         return '<TextGrid {0}, {1} Tiers>'.format(self.name, len(self))
@@ -693,7 +687,7 @@ class TextGrid(object):
         Remove and return tier at index i (default last). Will raise
         IndexError if TextGrid is empty or index is out of range.
         """
-        return self.tiers.pop(i) if i else self.tiers.pop()
+        return (self.tiers.pop(i) if i else self.tiers.pop())
 
     def read(self, f, round_digits=DEFAULT_TEXTGRID_PRECISION, encoding=None):
         """
