@@ -10,7 +10,7 @@ How to cite:
 
 While you don't have to, if you want to cite textgrid.py in a publication, include a footnote link to the source:
 
-    http://github.com/kylebgorman/textgrid.py/
+    http://github.com/kylebgorman/textgrid/
 
 How to install:
 ---------------
