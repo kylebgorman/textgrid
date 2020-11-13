@@ -700,7 +700,14 @@ class TextGrid(object):
             file_type, short = parse_header(source)
             if file_type != 'TextGrid':
                 raise TextGridError('The file could not be parsed as a TextGrid as it is lacking a proper header.')
-            self.minTime = parse_line(source.readline(), short, round_digits)
+
+            first_line_beside_header = source.readline()
+            try:
+                parse_line(first_line_beside_header, short, round_digits)
+            except Exception:
+                short = True
+
+            self.minTime = parse_line(first_line_beside_header, short, round_digits)
             self.maxTime = parse_line(source.readline(), short, round_digits)
             source.readline()  # more header junk
             if short:
