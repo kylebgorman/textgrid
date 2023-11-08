@@ -497,6 +497,7 @@ class TestIntervalTier(unittest.TestCase):
         self.foo.add(2.0, 2.5, 'baz')
         
         self.assertEqual(repr(self.foo.intervalContaining(2.25)), 'Interval(2.0, 2.5, baz)')
+        self.assertEqual(repr(self.foo.intervalContaining(0.5)), 'Interval(0.0, 1.0, bar)')
 
     def test_add_too_late(self):
         foo = textgrid.textgrid.IntervalTier('foo', maxTime=3.5)
