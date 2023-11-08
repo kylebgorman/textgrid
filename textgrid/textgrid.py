@@ -492,7 +492,7 @@ class IntervalTier(object):
         can be a numeric type, or a Point object.
         """
         i = self.indexContaining(time)
-        if i:
+        if i is not None:
             return self.intervals[i]
 
     def read(self, f, round_digits=DEFAULT_TEXTGRID_PRECISION):
