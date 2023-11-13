@@ -31,6 +31,7 @@ from __future__ import print_function
 
 import re
 import codecs
+import contextlib
 import os.path
 import logging
 
@@ -99,6 +100,26 @@ def detectEncoding(f):
         encoding = 'utf-16'
 
     return encoding
+
+
+@contextlib.contextmanager
+def as_file(obj, encoding):
+    """
+    Accept file-object or path-like object for reading TextGrid
+    """
+    if hasattr(obj, 'readline'):
+        do_close = False
+        file_obj = obj
+    else:
+        do_close = True
+        if encoding is None:
+            encoding = detectEncoding(obj)
+        file_obj = codecs.open(obj, 'r', encoding=encoding)
+    try:
+        yield file_obj
+    finally:
+        if do_close:
+            file_obj.close()
 
 
 class Point(object):
@@ -692,11 +713,10 @@ class TextGrid(object):
     def read(self, f, round_digits=DEFAULT_TEXTGRID_PRECISION, encoding=None):
         """
         Read the tiers contained in the Praat-formatted TextGrid file
-        indicated by string f. Times are rounded to the specified precision.
+        indicated by path or file-like object f.
+        Times are rounded to the specified precision.
         """
-        if encoding is None:
-            encoding = detectEncoding(f)
-        with codecs.open(f, 'r', encoding=encoding) as source:
+        with as_file(f, encoding) as source:
             file_type, short = parse_header(source)
             if file_type != 'TextGrid':
                 raise TextGridError('The file could not be parsed as a TextGrid as it is lacking a proper header.')
